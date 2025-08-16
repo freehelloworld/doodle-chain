@@ -100,7 +100,7 @@ io.on('connection', (socket) => {
     if (lobby && player && player.isHost) {
       console.log(`Game ${gameCode} is starting.`);
       lobby.gameState = 'PROMPT_PHASE';
-      lobby.round = 0;
+      lobby.round = 2;
 
       // Create a "book" for each player, identified by the owner's socket ID
       lobby.books = {};
@@ -148,18 +148,26 @@ io.on('connection', (socket) => {
   socket.on('submit-drawing', ({ gameCode, bookId, drawing }) => {
     const lobby = lobbies[gameCode];
     if (!lobby) return;
-
+    
     const book = lobby.books[bookId];
     if (book) {
       book.pages.push({ type: 'DRAWING', dataUrl: drawing, authorId: socket.id });
 
       // Check if all players have submitted their drawings
       const totalPages = Object.values(lobby.books).reduce((sum, b) => sum + b.pages.length, 0);
-      if (totalPages === lobby.players.length * 2) {
-        console.log(`All drawings submitted for game ${gameCode}. Starting DESCRIBING_PHASE.`);
-        lobby.gameState = 'DESCRIBING_PHASE';
-        assignTasks(lobby, 'DESCRIBING_PHASE');
-        io.to(gameCode).emit('lobby-update', lobby);
+      if (totalPages === lobby.players.length * lobby.round) {
+        lobby.round++;
+        if (lobby.round > lobby.players.length) {
+          console.log(`All drawings submitted for game ${gameCode}. Starting REVEAL_PHASE.`);
+          lobby.gameState = 'REVEAL_PHASE';
+          io.to(gameCode).emit('game-reveal', { books: lobby.books });
+          io.to(gameCode).emit('lobby-update', lobby);
+        } else {
+          console.log(`All drawings submitted for game ${gameCode}. Starting DESCRIBING_PHASE.`);
+          lobby.gameState = 'DESCRIBING_PHASE';
+          assignTasks(lobby, 'DESCRIBING_PHASE');
+          io.to(gameCode).emit('lobby-update', lobby);
+        }
       }
     }
   });
@@ -173,9 +181,9 @@ io.on('connection', (socket) => {
       book.pages.push({ type: 'DESCRIBING', text: description, authorId: socket.id });
 
       const totalPages = Object.values(lobby.books).reduce((sum, b) => sum + b.pages.length, 0);
-      if (totalPages === lobby.players.length * 3) {
+      if (totalPages === lobby.players.length * lobby.round) {
         lobby.round++;
-        if (lobby.round >= lobby.players.length) {
+        if (lobby.round > lobby.players.length) {
           console.log(`All descriptions submitted for game ${gameCode}. Starting REVEAL_PHASE.`);
           lobby.gameState = 'REVEAL_PHASE';
           io.to(gameCode).emit('game-reveal', { books: lobby.books });
