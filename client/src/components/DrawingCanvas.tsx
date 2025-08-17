@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 interface DrawingCanvasProps {
   width?: number;
@@ -71,39 +71,31 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 600, height = 400
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: '10px' }}>
-        <label htmlFor="brushColor">Color:</label>
+    <div className="d-flex flex-column align-items-center">
+      <div className="d-flex justify-content-center align-items-center mb-3">
+        <label htmlFor="brushColor" className="form-label me-2">Color:</label>
         <input
           type="color"
           id="brushColor"
+          className="form-control form-control-color me-3"
           value={brushColor}
           onChange={(e) => { setBrushColor(e.target.value); setIsErasing(false); }}
         />
-        <label htmlFor="brushSize" style={{ marginLeft: '15px' }}>Size:</label>
+        <label htmlFor="brushSize" className="form-label me-2">Size:</label>
         <input
           type="range"
           id="brushSize"
+          className="form-range me-3"
           min="1"
           max="20"
           value={brushSize}
           onChange={(e) => setBrushSize(parseInt(e.target.value))}
         />
-        <button
-          onClick={() => setIsErasing(false)}
-          style={{ marginLeft: '15px', backgroundColor: !isErasing ? '#ccc' : 'transparent' }}
-        >
-          Pen
-        </button>
-        <button
-          onClick={() => setIsErasing(true)}
-          style={{ marginLeft: '5px', backgroundColor: isErasing ? '#ccc' : 'transparent' }}
-        >
-          Eraser
-        </button>
-        <button onClick={clearCanvas} style={{ marginLeft: '15px' }}>
-          Clear
-        </button>
+        <div className="btn-group me-3" role="group">
+          <button type="button" className={`btn ${!isErasing ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setIsErasing(false)}>Pen</button>
+          <button type="button" className={`btn ${isErasing ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setIsErasing(true)}>Eraser</button>
+        </div>
+        <button type="button" className="btn btn-secondary" onClick={clearCanvas}>Clear</button>
       </div>
       <canvas
         ref={canvasRef}
@@ -113,7 +105,8 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 600, height = 400
         onMouseMove={draw}
         onMouseUp={stopDrawing}
         onMouseLeave={stopDrawing}
-        style={{ border: '1px solid #000', cursor: isErasing ? `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="black" d="M19.3 8.92L15.08 4.7c-.39-.39-1.03-.39-1.42 0L6.1 12.28c-.39.39-.39 1.03 0 1.42l4.22 4.22c.39.39 1.03.39 1.42 0l7.78-7.78c-.39-.39-.39-1.03 0-1.42zM14.08 6.12L17.88 9.92 10.12 17.68 6.32 13.88 14.08 6.12z"/></svg>') 12 12, auto` : 'crosshair' }}
+        className="border border-dark"
+        style={{ cursor: isErasing ? `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="black" d="M19.3 8.92L15.08 4.7c-.39-.39-1.03-.39-1.42 0L6.1 12.28c-.39.39-.39 1.03 0 1.42l4.22 4.22c.39.39 1.03.39 1.42 0l7.78-7.78c-.39-.39-.39-1.03 0-1.42zM14.08 6.12L17.88 9.92 10.12 17.68 6.32 13.88 14.08 6.12z"/></svg>') 12 12, auto` : 'crosshair' }}
       />
     </div>
   );

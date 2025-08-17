@@ -24,13 +24,23 @@ const DrawingPhase: React.FC<DrawingPhaseProps> = ({ task, onSubmitDrawing }) =>
   };
 
   return (
-    <div>
-      <h2>Your prompt to draw is:</h2>
-      <p style={{ border: '1px solid #ccc', padding: '10px', background: '#f9f9f9' }}>
-        <em>"{task.prompt}"</em>
-      </p>
-      <DrawingCanvas onDrawingComplete={handleDrawingComplete} />
-      <button onClick={handleSubmit} disabled={!drawingData}>Submit Drawing</button>
+    <div className="container text-center mt-5">
+      <div className="row justify-content-center">
+        <div className="col-md-8">
+          <div className="card p-4">
+            <h2 className="card-title mb-4">Your prompt to draw is:</h2>
+            <p className="card-text p-3 bg-light border rounded">
+              <em>"{task.prompt}"</em>
+            </p>
+            <div className="mt-4">
+              <DrawingCanvas onDrawingComplete={handleDrawingComplete} />
+            </div>
+            <div className="d-grid gap-2 mt-4">
+              <button className="btn btn-primary" onClick={handleSubmit} disabled={!drawingData}>Submit Drawing</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

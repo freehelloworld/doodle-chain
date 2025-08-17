@@ -29,29 +29,41 @@ const RevealPage: React.FC<RevealPageProps> = ({ books, players }) => {
   };
 
   return (
-    <div>
-      <h2>Game Over! The Reveals:</h2>
-      {Object.values(books).map((book) => (
-        <div key={book.owner.id} style={{ border: '2px solid #333', margin: '20px 0', padding: '15px', borderRadius: '8px', backgroundColor: '#f0f0f0' }}>
-          <h3>Book by {book.owner.name}</h3>
-          {book.pages.map((page, index) => (
-            <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px dashed #999', backgroundColor: '#fff' }}>
-              {page.type === 'PROMPT' && (
-                <p><strong>Prompt:</strong> "{page.text}" (by {getAuthorName(page.authorId)})</p>
-              )}
-              {page.type === 'DRAWING' && (
-                <div>
-                  <p><strong>Drawing:</strong> (by {getAuthorName(page.authorId)})</p>
-                  <img src={page.dataUrl} alt="Drawing" style={{ maxWidth: '100%', border: '1px solid #eee' }} />
-                </div>
-              )}
-              {page.type === 'DESCRIBING' && (
-                <p><strong>Description:</strong> "{page.text}" (by {getAuthorName(page.authorId)})</p>
-              )}
+    <div className="container mt-5">
+      <h2 className="text-center mb-4">Game Over! The Reveals:</h2>
+      <div className="accordion" id="revealAccordion">
+        {Object.values(books).map((book, bookIndex) => (
+          <div className="accordion-item" key={book.owner.id}>
+            <h2 className="accordion-header" id={`heading${bookIndex}`}>
+              <button className="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse${bookIndex}`} aria-expanded="true" aria-controls={`collapse${bookIndex}`}>
+                Book by {book.owner.name}
+              </button>
+            </h2>
+            <div id={`collapse${bookIndex}`} className="accordion-collapse collapse show" aria-labelledby={`heading${bookIndex}`} data-bs-parent="#revealAccordion">
+              <div className="accordion-body">
+                {book.pages.map((page, pageIndex) => (
+                  <div key={pageIndex} className="card mb-3">
+                    <div className="card-body">
+                      {page.type === 'PROMPT' && (
+                        <p className="card-text"><strong>Prompt:</strong> "{page.text}" (by {getAuthorName(page.authorId)})</p>
+                      )}
+                      {page.type === 'DRAWING' && (
+                        <div>
+                          <p className="card-text"><strong>Drawing:</strong> (by {getAuthorName(page.authorId)})</p>
+                          <img src={page.dataUrl} alt="Drawing" className="img-fluid rounded" />
+                        </div>
+                      )}
+                      {page.type === 'DESCRIBING' && (
+                        <p className="card-text"><strong>Description:</strong> "{page.text}" (by {getAuthorName(page.authorId)})</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
