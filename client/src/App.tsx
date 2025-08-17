@@ -7,7 +7,7 @@ import DrawingPhase from './components/DrawingPhase';
 import DescribingPhase from './components/DescribingPhase';
 import RevealPage from './components/RevealPage'; // New import
 
-const socket = io('http://localhost:3000');
+const socket = io(import.meta.env.PROD ? import.meta.env.VITE_SERVER_URL : 'http://localhost:3000');
 
 interface Player {
   id: string;
