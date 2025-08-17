@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 interface DescribingPhaseProps {
   task: {
-    drawing: string;
+    drawing?: string;
   };
   onSubmitDescription: (description: string) => void;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import HomePage from './components/HomePage';
 import LobbyPage from './components/LobbyPage';
@@ -133,21 +133,21 @@ function App() {
     }
 
     if (lobby.gameState === 'PROMPT_PHASE') {
-        if (task && task.type === 'PROMPT') {
+        if (task && task.type === 'PROMPT' && task.bookOwnerName) {
             return <PromptPhase task={task} onSubmitPrompt={handleSubmitPrompt} />;
         }
         return <h2>Waiting for other players to submit their prompts...</h2>;
     }
 
     if (lobby.gameState === 'DRAWING_PHASE') {
-        if (task && task.type === 'DRAWING') {
+        if (task && task.type === 'DRAWING' && task.prompt) {
             return <DrawingPhase task={task} onSubmitDrawing={handleSubmitDrawing} />;
         }
         return <h2>Waiting for other players to submit their drawings...</h2>;
     }
 
     if (lobby.gameState === 'DESCRIBING_PHASE') {
-        if (task && task.type === 'DESCRIBING') {
+        if (task && task.type === 'DESCRIBING' && task.drawing) {
             return <DescribingPhase task={task} onSubmitDescription={handleSubmitDescription} />;
         }
         return <h2>Waiting for other players to submit their descriptions...</h2>;

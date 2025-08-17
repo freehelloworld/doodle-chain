@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 interface PromptPhaseProps {
   task: {
-    bookOwnerName: string;
+    bookOwnerName?: string;
   };
   onSubmitPrompt: (prompt: string) => void;
 }

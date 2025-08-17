@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DrawingCanvas from './DrawingCanvas';
 
 interface DrawingPhaseProps {
   task: {
-    prompt: string;
+    prompt?: string;
   };
   onSubmitDrawing: (drawingDataUrl: string) => void;
 }
