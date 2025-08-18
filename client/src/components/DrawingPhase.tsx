@@ -26,7 +26,7 @@ const DrawingPhase: React.FC<DrawingPhaseProps> = ({ task, onSubmitDrawing }) =>
   return (
     <div className="container text-center mt-5">
       <div className="row justify-content-center">
-        <div className="col-md-8">
+        <div className="col-md-10">
           <div className="card p-4">
             <h2 className="card-title mb-4">Your prompt to draw is:</h2>
             <p className="card-text p-3 bg-light border rounded">
