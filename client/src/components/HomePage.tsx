@@ -22,10 +22,10 @@ const HomePage: React.FC<HomePageProps> = ({ onCreateGame, onJoinGame }) => {
   };
 
   return (
-    <div className="container-fluid vh-100 d-flex flex-column justify-content-center align-items-center">
-      <h1 className="mb-4">Doodle Chain</h1>
-      <div className="row justify-content-center w-100">
-        <div className="col-md-4">
+    <div className="container mt-5">
+      <div className="row justify-content-center">
+        <div className="col-md-6">
+          <h1 className="text-center mb-4">Doodle Chain</h1>
           <div className="card p-4">
             <div className="mb-3">
               <input
