@@ -24,6 +24,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   const CANVAS_BACKGROUND_COLOR = 'white';
+  const BASIC_COLORS = ['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FFA500', '#800080'];
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -134,50 +135,76 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600
   };
 
   return (
-    <div className="d-flex flex-column align-items-center">
-      <div className="d-flex justify-content-center align-items-center mb-3">
-        <label htmlFor="brushColor" className="form-label me-2">Color:</label>
+    <div className="d-flex justify-content-center align-items-start" style={{ width: '100%' }}>
+      {/* Left Sidebar for Colors */}
+      <div className="d-flex flex-column align-items-center me-3 p-2 border rounded">
+        <label htmlFor="brushColor" className="form-label mb-2">Custom Color:</label>
         <input
           type="color"
           id="brushColor"
-          className="form-control form-control-color me-3"
+          className="form-control form-control-color mb-3"
           value={brushColor}
           onChange={(e) => setBrushColor(e.target.value)}
         />
-        <label htmlFor="brushSize" className="form-label me-2">Size:</label>
-        <input
-          type="range"
-          id="brushSize"
-          className="form-range me-3"
-          min="1"
-          max="20"
-          value={brushSize}
-          onChange={(e) => setBrushSize(parseInt(e.target.value))}
+        <div className="row g-1" style={{ maxWidth: '100px' }}>
+          {BASIC_COLORS.map((color, index) => (
+            <div key={index} className="col-6 d-grid">
+              <button
+                className="btn btn-sm"
+                style={{
+                  backgroundColor: color,
+                  height: '30px',
+                  border: `1px solid ${brushColor === color ? '#000' : '#ccc'}`,
+                }}
+                onClick={() => setBrushColor(color)}
+              ></button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Canvas and Controls */}
+      <div className="d-flex flex-column align-items-center">
+        <div className="d-flex justify-content-center align-items-center mb-3">
+          <label htmlFor="brushSize" className="form-label me-2">Size:</label>
+          <input
+            type="range"
+            id="brushSize"
+            className="form-range me-3"
+            min="1"
+            max="20"
+            value={brushSize}
+            onChange={(e) => setBrushSize(parseInt(e.target.value))}
+          />
+          <div className="btn-group me-3" role="group">
+            <button type="button" className="btn btn-outline-secondary" onClick={undo} disabled={historyIndex <= 0}>Undo</button>
+            <button type="button" className="btn btn-outline-secondary" onClick={redo} disabled={historyIndex >= history.length - 1}>Redo</button>
+          </div>
+          <button type="button" className="btn btn-secondary" onClick={clearCanvas}>Clear</button>
+        </div>
+        <canvas
+          ref={canvasRef}
+          width={width}
+          height={height}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          className="border border-dark"
+          style={{ cursor: 'crosshair' }}
         />
-        <div className="btn-group me-3" role="group">
+      </div>
+
+      {/* Right Sidebar for Tools */}
+      <div className="d-flex flex-column align-items-center ms-3 p-2 border rounded">
+        <div className="btn-group-vertical" role="group">
           <button type="button" className={`btn ${tool === 'pen' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('pen')}>Pen</button>
           <button type="button" className={`btn ${tool === 'eraser' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('eraser')}>Eraser</button>
           <button type="button" className={`btn ${tool === 'circle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('circle')}>Circle</button>
           <button type="button" className={`btn ${tool === 'rectangle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('rectangle')}>Rectangle</button>
           <button type="button" className={`btn ${tool === 'bucket' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('bucket')}>Bucket</button>
         </div>
-        <div className="btn-group me-3" role="group">
-          <button type="button" className="btn btn-outline-secondary" onClick={undo} disabled={historyIndex <= 0}>Undo</button>
-          <button type="button" className="btn btn-outline-secondary" onClick={redo} disabled={historyIndex >= history.length - 1}>Redo</button>
-        </div>
-        <button type="button" className="btn btn-secondary" onClick={clearCanvas}>Clear</button>
       </div>
-      <canvas
-        ref={canvasRef}
-        width={width}
-        height={height}
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        className="border border-dark"
-        style={{ cursor: 'crosshair' }}
-      />
     </div>
   );
 };
