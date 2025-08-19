@@ -22,6 +22,7 @@ interface LobbyState {
   round: number;
   bookOrder: { [key: string]: string };
   books: { [key: string]: Book };
+  timer: number;
 }
 
 interface Task {
@@ -49,6 +50,7 @@ function App() {
   const [task, setTask] = useState<Task | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revealedBooks, setRevealedBooks] = useState<{ [key: string]: Book } | null>(null); // New state
+  const [timer, setTimer] = useState<number | null>(null);
 
   useEffect(() => {
     socket.on('lobby-update', (lobbyData: LobbyState) => {
@@ -64,7 +66,9 @@ function App() {
         setTask(taskData);
     });
 
-    
+    socket.on('time-update', (time: number) => {
+      setTimer(time);
+    });
 
     socket.on('error', (errorData: { message: string }) => {
       setError(errorData.message);
@@ -74,7 +78,7 @@ function App() {
     return () => {
       socket.off('lobby-update');
       socket.off('new-task');
-      
+      socket.off('time-update');
       socket.off('error');
     };
   }, []);
@@ -87,9 +91,9 @@ function App() {
     socket.emit('join-game', { playerName, gameCode });
   };
 
-  const handleStartGame = () => {
+  const handleStartGame = (timerSettings: { drawingTimer: number; describingTimer: number }) => {
     if (lobby) {
-      socket.emit('start-game', { gameCode: lobby.gameCode });
+      socket.emit('start-game', { gameCode: lobby.gameCode, timerSettings });
     }
   };
 
@@ -141,14 +145,14 @@ function App() {
 
     if (lobby.gameState === 'DRAWING_PHASE') {
         if (task && task.type === 'DRAWING' && task.prompt) {
-            return <DrawingPhase task={task} onSubmitDrawing={handleSubmitDrawing} />;
+            return <DrawingPhase task={task} onSubmitDrawing={handleSubmitDrawing} timer={timer} />;
         }
         return <h2>Waiting for other players to submit their drawings...</h2>;
     }
 
     if (lobby.gameState === 'DESCRIBING_PHASE') {
         if (task && task.type === 'DESCRIBING' && task.drawing) {
-            return <DescribingPhase task={task} onSubmitDescription={handleSubmitDescription} />;
+            return <DescribingPhase task={task} onSubmitDescription={handleSubmitDescription} timer={timer} />;
         }
         return <h2>Waiting for other players to submit their descriptions...</h2>;
     }

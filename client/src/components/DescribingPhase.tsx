@@ -5,9 +5,10 @@ interface DescribingPhaseProps {
     drawing?: string;
   };
   onSubmitDescription: (description: string) => void;
+  timer: number | null;
 }
 
-const DescribingPhase: React.FC<DescribingPhaseProps> = ({ task, onSubmitDescription }) => {
+const DescribingPhase: React.FC<DescribingPhaseProps> = ({ task, onSubmitDescription, timer }) => {
   const [description, setDescription] = useState('');
 
   const handleSubmit = () => {
@@ -21,7 +22,10 @@ const DescribingPhase: React.FC<DescribingPhaseProps> = ({ task, onSubmitDescrip
       <div className="row justify-content-center">
         <div className="col-md-8">
           <div className="card p-4">
-            <h2 className="card-title mb-4">Describe this drawing:</h2>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h2 className="card-title mb-0">Describe this drawing:</h2>
+              {timer !== null && <span className="badge bg-secondary fs-4">{timer}</span>}
+            </div>
             <img src={task.drawing} alt="Drawing to describe" className="img-fluid border rounded mb-4" />
             <div className="mb-3">
               <textarea

@@ -14,11 +14,40 @@ const io = new Server(server, {
 const lobbies = {}; // In-memory store for lobbies
 
 const generateGameCode = () => {
-  // Generate a random 4-character alphanumeric code
   return Math.random().toString(36).substring(2, 6).toUpperCase();
 }
 
+const getSanitizedLobby = (lobby) => {
+  const sanitizedLobby = { ...lobby };
+  delete sanitizedLobby.timer;
+  delete sanitizedLobby.submittedPlayers;
+  return sanitizedLobby;
+};
+
+const startTimer = (gameCode, duration, onTimeout) => {
+  const lobby = lobbies[gameCode];
+  if (!lobby) return;
+
+  if (lobby.timer) {
+    clearInterval(lobby.timer);
+  }
+
+  let remainingTime = duration;
+  io.to(gameCode).emit('time-update', remainingTime);
+
+  lobby.timer = setInterval(() => {
+    remainingTime--;
+    io.to(gameCode).emit('time-update', remainingTime);
+
+    if (remainingTime <= 0) {
+      clearInterval(lobby.timer);
+      onTimeout();
+    }
+  }, 1000);
+};
+
 const assignTasks = (lobby, currentPhase) => {
+  lobby.submittedPlayers = new Set();
   const players = lobby.players.map(p => p.id);
   const currentBookOrder = { ...lobby.bookOrder };
   const newBookOrder = {};
@@ -61,6 +90,63 @@ const assignTasks = (lobby, currentPhase) => {
   });
 };
 
+const handleSubmission = (gameCode, playerId, bookId, data, type, isTimeout = false) => {
+  const lobby = lobbies[gameCode];
+  if (!lobby || lobby.submittedPlayers.has(playerId)) return;
+
+  const book = lobby.books[bookId];
+  if (book) {
+    const page = { type, authorId: playerId };
+    if (type === 'PROMPT') page.text = data;
+    else if (type === 'DRAWING') page.dataUrl = data;
+    else if (type === 'DESCRIBING') page.text = data;
+
+    book.pages.push(page);
+    lobby.submittedPlayers.add(playerId);
+
+    if (lobby.submittedPlayers.size === lobby.players.length) {
+      clearInterval(lobby.timer);
+      if (lobby.gameState === 'DRAWING_PHASE' || lobby.gameState === 'DESCRIBING_PHASE') {
+        lobby.round++;
+        if (lobby.round > lobby.players.length) {
+          lobby.gameState = 'REVEAL_PHASE';
+          io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
+        } else {
+          lobby.gameState = lobby.gameState === 'DRAWING_PHASE' ? 'DESCRIBING_PHASE' : 'DRAWING_PHASE';
+          assignTasks(lobby, lobby.gameState);
+          if (!isTimeout) {
+            const timerDuration = lobby.gameState === 'DRAWING_PHASE' ? lobby.timerSettings.drawingTimer : lobby.timerSettings.describingTimer;
+            startTimer(gameCode, timerDuration, () => handleTimeout(gameCode));
+          }
+        }
+      } else if (lobby.gameState === 'PROMPT_PHASE') {
+        lobby.gameState = 'DRAWING_PHASE';
+        assignTasks(lobby, lobby.gameState);
+        if (!isTimeout) {
+          startTimer(gameCode, lobby.timerSettings.drawingTimer, () => handleTimeout(gameCode));
+        }
+      }
+      io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
+    }
+  }
+};
+
+const handleTimeout = (gameCode) => {
+  const lobby = lobbies[gameCode];
+  if (!lobby) return;
+
+  console.log(`Timer ended for ${lobby.gameState} in game ${gameCode}.`);
+  const playersToSubmit = lobby.players.filter(p => !lobby.submittedPlayers.has(p.id));
+
+  playersToSubmit.forEach(player => {
+    const bookId = lobby.bookOrder[player.id];
+    if (lobby.gameState === 'DRAWING_PHASE') {
+      handleSubmission(gameCode, player.id, bookId, 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'DRAWING', true);
+    } else if (lobby.gameState === 'DESCRIBING_PHASE') {
+      handleSubmission(gameCode, player.id, bookId, 'Timeout', 'DESCRIBING', true);
+    }
+  });
+};
 
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
@@ -70,30 +156,28 @@ io.on('connection', (socket) => {
     lobbies[gameCode] = {
       gameCode,
       players: [{ id: socket.id, name: playerName, isHost: true }],
-      gameState: 'LOBBY'
+      gameState: 'LOBBY',
+      timerSettings: { drawingTimer: 60, describingTimer: 30 },
+      submittedPlayers: new Set(),
     };
     socket.join(gameCode);
-    // Send lobby data back to the creator
-    io.to(gameCode).emit('lobby-update', lobbies[gameCode]);
+    io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobbies[gameCode]));
     console.log(`Game created with code: ${gameCode} by ${playerName}`);
   });
 
   socket.on('join-game', ({ gameCode, playerName }) => {
     const lobby = lobbies[gameCode];
     if (lobby) {
-      // Add player to the lobby
       lobby.players.push({ id: socket.id, name: playerName, isHost: false });
       socket.join(gameCode);
-      // Broadcast the updated lobby state to all clients in the room
-      io.to(gameCode).emit('lobby-update', lobby);
+      io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
       console.log(`${playerName} joined game ${gameCode}`);
     } else {
-      // Handle case where lobby doesn't exist
       socket.emit('error', { message: 'Game not found' });
     }
   });
 
-  socket.on('start-game', ({ gameCode }) => {
+  socket.on('start-game', ({ gameCode, timerSettings }) => {
     const lobby = lobbies[gameCode];
     const player = lobby.players.find(p => p.id === socket.id);
 
@@ -101,128 +185,59 @@ io.on('connection', (socket) => {
       console.log(`Game ${gameCode} is starting.`);
       lobby.gameState = 'PROMPT_PHASE';
       lobby.round = 2;
+      lobby.timerSettings = timerSettings;
 
-      // Create a "book" for each player, identified by the owner's socket ID
       lobby.books = {};
-      lobby.bookOrder = {}; // Maps player ID to the book ID they currently hold
+      lobby.bookOrder = {};
       lobby.players.forEach(p => {
         lobby.books[p.id] = {
           owner: p,
           pages: []
         };
-        lobby.bookOrder[p.id] = p.id; // Initially, each player holds their own book
+        lobby.bookOrder[p.id] = p.id;
       });
 
-      // First round is prompting, no need to assign tasks yet
-      lobby.players.forEach(p => {
-        io.to(p.id).emit('new-task', {
-          type: 'PROMPT',
-          bookId: p.id,
-          bookOwnerName: p.name
-        });
-      });
-
-      io.to(gameCode).emit('lobby-update', lobby);
+      assignTasks(lobby, 'PROMPT_PHASE');
+      io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
     }
   });
 
   socket.on('submit-prompt', ({ gameCode, bookId, prompt }) => {
-    const lobby = lobbies[gameCode];
-    if (!lobby) return;
-
-    const book = lobby.books[bookId];
-    if (book) {
-      book.pages.push({ type: 'PROMPT', text: prompt, authorId: socket.id });
-
-      // Check if all players have submitted their prompts
-      const totalPages = Object.values(lobby.books).reduce((sum, b) => sum + b.pages.length, 0);
-      if (totalPages === lobby.players.length) {
-        console.log(`All prompts submitted for game ${gameCode}. Starting DRAWING_PHASE.`);
-        lobby.gameState = 'DRAWING_PHASE';
-        assignTasks(lobby, 'DRAWING_PHASE');
-        io.to(gameCode).emit('lobby-update', lobby);
-      }
-    }
+    handleSubmission(gameCode, socket.id, bookId, prompt, 'PROMPT');
   });
 
   socket.on('submit-drawing', ({ gameCode, bookId, drawing }) => {
-    const lobby = lobbies[gameCode];
-    if (!lobby) return;
-    
-    const book = lobby.books[bookId];
-    if (book) {
-      book.pages.push({ type: 'DRAWING', dataUrl: drawing, authorId: socket.id });
-
-      // Check if all players have submitted their drawings
-      const totalPages = Object.values(lobby.books).reduce((sum, b) => sum + b.pages.length, 0);
-      if (totalPages === lobby.players.length * lobby.round) {
-        lobby.round++;
-        if (lobby.round > lobby.players.length) {
-          console.log(`All drawings submitted for game ${gameCode}. Starting REVEAL_PHASE.`);
-          lobby.gameState = 'REVEAL_PHASE';
-          io.to(gameCode).emit('game-reveal', { books: lobby.books });
-          io.to(gameCode).emit('lobby-update', lobby);
-        } else {
-          console.log(`All drawings submitted for game ${gameCode}. Starting DESCRIBING_PHASE.`);
-          lobby.gameState = 'DESCRIBING_PHASE';
-          assignTasks(lobby, 'DESCRIBING_PHASE');
-          io.to(gameCode).emit('lobby-update', lobby);
-        }
-      }
-    }
+    handleSubmission(gameCode, socket.id, bookId, drawing, 'DRAWING');
   });
 
   socket.on('submit-description', ({ gameCode, bookId, description }) => {
-    const lobby = lobbies[gameCode];
-    if (!lobby) return;
-
-    const book = lobby.books[bookId];
-    if (book) {
-      book.pages.push({ type: 'DESCRIBING', text: description, authorId: socket.id });
-
-      const totalPages = Object.values(lobby.books).reduce((sum, b) => sum + b.pages.length, 0);
-      if (totalPages === lobby.players.length * lobby.round) {
-        lobby.round++;
-        if (lobby.round > lobby.players.length) {
-          console.log(`All descriptions submitted for game ${gameCode}. Starting REVEAL_PHASE.`);
-          lobby.gameState = 'REVEAL_PHASE';
-          io.to(gameCode).emit('game-reveal', { books: lobby.books });
-          io.to(gameCode).emit('lobby-update', lobby);
-        } else {
-          console.log(`All descriptions submitted for game ${gameCode}. Starting next DRAWING_PHASE.`);
-          lobby.gameState = 'DRAWING_PHASE';
-          assignTasks(lobby, 'DRAWING_PHASE');
-          io.to(gameCode).emit('lobby-update', lobby);
-        }
-      }
-    }
+    handleSubmission(gameCode, socket.id, bookId, description, 'DESCRIBING');
   });
 
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
-    // Find which lobby the player was in and remove them
     for (const gameCode in lobbies) {
       const lobby = lobbies[gameCode];
+      if (lobby.timer) {
+        clearInterval(lobby.timer);
+      }
       const playerIndex = lobby.players.findIndex(player => player.id === socket.id);
       
       if (playerIndex !== -1) {
         const wasHost = lobby.players[playerIndex].isHost;
         lobby.players.splice(playerIndex, 1);
         
-        // If the lobby is empty, delete it
         if (lobby.players.length === 0) {
           delete lobbies[gameCode];
           console.log(`Lobby ${gameCode} is empty and has been deleted.`);
           break;
         }
 
-        // If the host disconnected, assign a new host
         if (wasHost && lobby.players.length > 0) {
           lobby.players[0].isHost = true;
         }
 
-        // Broadcast the updated lobby state
-        io.to(gameCode).emit('lobby-update', lobby);
+        io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
         break;
       }
     }

@@ -1,5 +1,7 @@
 
 
+import { useState } from 'react';
+
 interface Player {
   id: string;
   name: string;
@@ -10,10 +12,17 @@ interface LobbyPageProps {
   gameCode: string;
   players: Player[];
   isHost: boolean;
-  onStartGame: () => void;
+  onStartGame: (timerSettings: { drawingTimer: number; describingTimer: number }) => void;
 }
 
 const LobbyPage: React.FC<LobbyPageProps> = ({ gameCode, players, isHost, onStartGame }) => {
+  const [drawingTimer, setDrawingTimer] = useState(60);
+  const [describingTimer, setDescribingTimer] = useState(30);
+
+  const handleStartGame = () => {
+    onStartGame({ drawingTimer, describingTimer });
+  };
+
   return (
     <div className="container text-center mt-5">
       <div className="row justify-content-center">
@@ -30,8 +39,34 @@ const LobbyPage: React.FC<LobbyPageProps> = ({ gameCode, players, isHost, onStar
               ))}
             </ul>
             {isHost && (
-              <div className="d-grid gap-2 mt-4">
-                <button className="btn btn-primary" onClick={onStartGame}>Start Game</button>
+              <div>
+                <div className="row mt-4">
+                  <div className="col">
+                    <label htmlFor="drawing-timer" className="form-label">Drawing Time (seconds)</label>
+                    <input
+                      id="drawing-timer"
+                      type="number"
+                      className="form-control"
+                      value={drawingTimer}
+                      onChange={(e) => setDrawingTimer(parseInt(e.target.value, 10))}
+                      min="10"
+                    />
+                  </div>
+                  <div className="col">
+                    <label htmlFor="describing-timer" className="form-label">Describing Time (seconds)</label>
+                    <input
+                      id="describing-timer"
+                      type="number"
+                      className="form-control"
+                      value={describingTimer}
+                      onChange={(e) => setDescribingTimer(parseInt(e.target.value, 10))}
+                      min="10"
+                    />
+                  </div>
+                </div>
+                <div className="d-grid gap-2 mt-4">
+                  <button className="btn btn-primary" onClick={handleStartGame}>Start Game</button>
+                </div>
               </div>
             )}
           </div>

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import DrawingCanvas from './DrawingCanvas';
 
@@ -6,9 +7,10 @@ interface DrawingPhaseProps {
     prompt?: string;
   };
   onSubmitDrawing: (drawingDataUrl: string) => void;
+  timer: number | null;
 }
 
-const DrawingPhase: React.FC<DrawingPhaseProps> = ({ task, onSubmitDrawing }) => {
+const DrawingPhase: React.FC<DrawingPhaseProps> = ({ task, onSubmitDrawing, timer }) => {
   const [drawingData, setDrawingData] = useState<string | null>(null);
 
   const handleDrawingComplete = (dataUrl: string) => {
@@ -28,7 +30,10 @@ const DrawingPhase: React.FC<DrawingPhaseProps> = ({ task, onSubmitDrawing }) =>
       <div className="row justify-content-center">
         <div className="col-md-10">
           <div className="card p-4">
-            <h2 className="card-title mb-4">Your prompt to draw is:</h2>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h2 className="card-title mb-0">Your prompt to draw is:</h2>
+              {timer !== null && <span className="badge bg-secondary fs-4">{timer}</span>}
+            </div>
             <p className="card-text p-3 bg-light border rounded">
               <em>"{task.prompt}"</em>
             </p>
@@ -46,3 +51,4 @@ const DrawingPhase: React.FC<DrawingPhaseProps> = ({ task, onSubmitDrawing }) =>
 };
 
 export default DrawingPhase;
+
