@@ -25,7 +25,7 @@ function setPixel(imageData: ImageData, x: number, y: number, color: { r: number
   imageData.data[offset + 3] = color.a;
 }
 
-function colorsMatch(a: number[], b: number[], tolerance = 30) {
+function colorsMatch(a: number[] | Uint8ClampedArray, b: number[] | Uint8ClampedArray, tolerance = 30) {
   return (
     Math.abs(a[0] - b[0]) < tolerance &&
     Math.abs(a[1] - b[1]) < tolerance &&
