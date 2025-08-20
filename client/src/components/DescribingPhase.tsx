@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface DescribingPhaseProps {
   task: {
@@ -10,6 +10,12 @@ interface DescribingPhaseProps {
 
 const DescribingPhase: React.FC<DescribingPhaseProps> = ({ task, onSubmitDescription, timer }) => {
   const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (timer === 0) {
+      onSubmitDescription(description || 'Timeout');
+    }
+  }, [timer, description, onSubmitDescription]);
 
   const handleSubmit = () => {
     if (description.trim()) {

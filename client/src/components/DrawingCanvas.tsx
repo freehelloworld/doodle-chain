@@ -1,17 +1,20 @@
 
-
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { floodFill } from '../utils/floodFill';
 
 interface DrawingCanvasProps {
   width?: number;
   height?: number;
-  onDrawingComplete: (dataUrl: string) => void;
+  onDraw: (dataUrl: string) => void;
+}
+
+export interface DrawingCanvasRef {
+  getCanvasData: () => string | undefined;
 }
 
 type Tool = 'pen' | 'eraser' | 'circle' | 'rectangle' | 'bucket';
 
-const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600, onDrawingComplete }) => {
+const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCanvasProps> = ({ width = 800, height = 600, onDraw }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -26,6 +29,12 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600
   const CANVAS_BACKGROUND_COLOR = 'white';
   const BASIC_COLORS = ['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FFA500', '#800080'];
 
+  useImperativeHandle(ref, () => ({
+    getCanvasData: () => {
+      return canvasRef.current?.toDataURL('image/png');
+    }
+  }));
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas) {
@@ -35,6 +44,10 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600
         ctx.lineCap = 'round';
         ctx.fillStyle = CANVAS_BACKGROUND_COLOR;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Initial state, call onDraw
+        if (canvasRef.current) {
+          onDraw(canvasRef.current.toDataURL('image/png'));
+        }
         saveState();
       }
     }
@@ -61,6 +74,9 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
       context?.putImageData(history[newIndex], 0, 0);
+      if (canvasRef.current) {
+        onDraw(canvasRef.current.toDataURL('image/png'));
+      }
     }
   };
 
@@ -69,6 +85,9 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
       context?.putImageData(history[newIndex], 0, 0);
+      if (canvasRef.current) {
+        onDraw(canvasRef.current.toDataURL('image/png'));
+      }
     }
   };
 
@@ -78,6 +97,9 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600
     if (tool === 'bucket') {
       floodFill(context, offsetX, offsetY, brushColor);
       saveState();
+      if (canvasRef.current) {
+        onDraw(canvasRef.current.toDataURL('image/png'));
+      }
       return;
     }
     setIsDrawing(true);
@@ -109,6 +131,9 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600
       context.arc(startCoords.x, startCoords.y, radius, 0, 2 * Math.PI);
       context.stroke();
     }
+    if (canvasRef.current) {
+      onDraw(canvasRef.current.toDataURL('image/png'));
+    }
   };
 
   const stopDrawing = () => {
@@ -117,11 +142,8 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600
       saveState();
     }
     setSnapshot(null);
-    if (context) {
-      const dataUrl = canvasRef.current?.toDataURL('image/png');
-      if (dataUrl) {
-        onDrawingComplete(dataUrl);
-      }
+    if (canvasRef.current) {
+      onDraw(canvasRef.current.toDataURL('image/png'));
     }
   };
 
@@ -131,6 +153,9 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600
       context.fillStyle = CANVAS_BACKGROUND_COLOR;
       context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       saveState();
+      if (canvasRef.current) {
+        onDraw(canvasRef.current.toDataURL('image/png'));
+      }
     }
   };
 
@@ -209,5 +234,4 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width = 800, height = 600
   );
 };
 
-export default DrawingCanvas;
-
+export default forwardRef(DrawingCanvas);

@@ -1,3 +1,4 @@
+
 const express = require('express');
 const http = require('http');
 const { Server } = require("socket.io");
@@ -90,7 +91,7 @@ const assignTasks = (lobby, currentPhase) => {
   });
 };
 
-const handleSubmission = (gameCode, playerId, bookId, data, type, isTimeout = false) => {
+const handleSubmission = (gameCode, playerId, bookId, data, type) => {
   const lobby = lobbies[gameCode];
   if (!lobby || lobby.submittedPlayers.has(playerId)) return;
 
@@ -114,17 +115,13 @@ const handleSubmission = (gameCode, playerId, bookId, data, type, isTimeout = fa
         } else {
           lobby.gameState = lobby.gameState === 'DRAWING_PHASE' ? 'DESCRIBING_PHASE' : 'DRAWING_PHASE';
           assignTasks(lobby, lobby.gameState);
-          if (!isTimeout) {
-            const timerDuration = lobby.gameState === 'DRAWING_PHASE' ? lobby.timerSettings.drawingTimer : lobby.timerSettings.describingTimer;
-            startTimer(gameCode, timerDuration, () => handleTimeout(gameCode));
-          }
+          const timerDuration = lobby.gameState === 'DRAWING_PHASE' ? lobby.timerSettings.drawingTimer : lobby.timerSettings.describingTimer;
+          startTimer(gameCode, timerDuration, () => handleTimeout(gameCode));
         }
       } else if (lobby.gameState === 'PROMPT_PHASE') {
         lobby.gameState = 'DRAWING_PHASE';
         assignTasks(lobby, lobby.gameState);
-        if (!isTimeout) {
-          startTimer(gameCode, lobby.timerSettings.drawingTimer, () => handleTimeout(gameCode));
-        }
+        startTimer(gameCode, lobby.timerSettings.drawingTimer, () => handleTimeout(gameCode));
       }
       io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
     }
@@ -135,15 +132,18 @@ const handleTimeout = (gameCode) => {
   const lobby = lobbies[gameCode];
   if (!lobby) return;
 
-  console.log(`Timer ended for ${lobby.gameState} in game ${gameCode}.`);
+  console.log(`Timer ended for ${lobby.gameState} in game ${gameCode}. but server don't need to handle.`);
+
+  return;
+
   const playersToSubmit = lobby.players.filter(p => !lobby.submittedPlayers.has(p.id));
 
   playersToSubmit.forEach(player => {
     const bookId = lobby.bookOrder[player.id];
     if (lobby.gameState === 'DRAWING_PHASE') {
-      handleSubmission(gameCode, player.id, bookId, 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'DRAWING', true);
+      handleSubmission(gameCode, player.id, bookId, 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'DRAWING');
     } else if (lobby.gameState === 'DESCRIBING_PHASE') {
-      handleSubmission(gameCode, player.id, bookId, 'Timeout', 'DESCRIBING', true);
+      handleSubmission(gameCode, player.id, bookId, 'Timeout', 'DESCRIBING');
     }
   });
 };
