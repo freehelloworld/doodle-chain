@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import io from 'socket.io-client';
 import HomePage from './components/HomePage';
 import LobbyPage from './components/LobbyPage';
@@ -22,6 +22,7 @@ interface LobbyState {
   round: number;
   bookOrder: { [key: string]: string };
   books: { [key: string]: Book };
+  timer: number;
 }
 
 interface Task {
@@ -49,6 +50,7 @@ function App() {
   const [task, setTask] = useState<Task | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revealedBooks, setRevealedBooks] = useState<{ [key: string]: Book } | null>(null); // New state
+  const [timer, setTimer] = useState<number | null>(null);
 
   useEffect(() => {
     socket.on('lobby-update', (lobbyData: LobbyState) => {
@@ -64,7 +66,9 @@ function App() {
         setTask(taskData);
     });
 
-    
+    socket.on('time-update', (time: number) => {
+      setTimer(time);
+    });
 
     socket.on('error', (errorData: { message: string }) => {
       setError(errorData.message);
@@ -74,7 +78,7 @@ function App() {
     return () => {
       socket.off('lobby-update');
       socket.off('new-task');
-      
+      socket.off('time-update');
       socket.off('error');
     };
   }, []);
@@ -87,80 +91,84 @@ function App() {
     socket.emit('join-game', { playerName, gameCode });
   };
 
-  const handleStartGame = () => {
+  const handleStartGame = (timerSettings: { drawingTimer: number; describingTimer: number }) => {
     if (lobby) {
-      socket.emit('start-game', { gameCode: lobby.gameCode });
+      socket.emit('start-game', { gameCode: lobby.gameCode, timerSettings });
     }
   };
 
-  const handleSubmitPrompt = (prompt: string) => {
+  const handleSubmitPrompt = useCallback((prompt: string) => {
     if (lobby && task) {
         socket.emit('submit-prompt', { gameCode: lobby.gameCode, bookId: task.bookId, prompt });
         setTask(null); // Clear task after submission to show waiting message
     }
-  };
+  }, [lobby, task]);
 
-  const handleSubmitDrawing = (drawingDataUrl: string) => {
+  const handleSubmitDrawing = useCallback((drawingDataUrl: string) => {
     if (lobby && task) {
         socket.emit('submit-drawing', { gameCode: lobby.gameCode, bookId: task.bookId, drawing: drawingDataUrl });
         setTask(null); // Clear task after submission
     }
-  };
+  }, [lobby, task]);
 
-  const handleSubmitDescription = (description: string) => {
+  const handleSubmitDescription = useCallback((description: string) => {
     if (lobby && task) {
         socket.emit('submit-description', { gameCode: lobby.gameCode, bookId: task.bookId, description });
         setTask(null); // Clear task after submission
     }
-  };
+  }, [lobby, task]);
 
   const amIHost = lobby?.players.find(p => p.id === socket.id)?.isHost ?? false;
 
   const renderContent = () => {
-    if (!lobby) {
-      return <HomePage onCreateGame={handleCreateGame} onJoinGame={handleJoinGame} />;
-    }
+    try {
+      if (!lobby) {
+        return <HomePage onCreateGame={handleCreateGame} onJoinGame={handleJoinGame} />;
+      }
 
-    if (lobby.gameState === 'LOBBY') {
-      return (
-        <LobbyPage
-          gameCode={lobby.gameCode}
-          players={lobby.players}
-          isHost={amIHost}
-          onStartGame={handleStartGame}
-        />
-      );
-    }
+      if (lobby.gameState === 'LOBBY') {
+        return (
+          <LobbyPage
+            gameCode={lobby.gameCode}
+            players={lobby.players}
+            isHost={amIHost}
+            onStartGame={handleStartGame}
+          />
+        );
+      }
 
-    if (lobby.gameState === 'PROMPT_PHASE') {
-        if (task && task.type === 'PROMPT' && task.bookOwnerName) {
-            return <PromptPhase task={task} onSubmitPrompt={handleSubmitPrompt} />;
-        }
-        return <h2>Waiting for other players to submit their prompts...</h2>;
-    }
+      if (lobby.gameState === 'PROMPT_PHASE') {
+          if (task && task.type === 'PROMPT' && task.bookOwnerName) {
+              return <PromptPhase task={task} onSubmitPrompt={handleSubmitPrompt} />;
+          }
+          return <h2>Waiting for other players to submit their prompts...</h2>;
+      }
 
-    if (lobby.gameState === 'DRAWING_PHASE') {
-        if (task && task.type === 'DRAWING' && task.prompt) {
-            return <DrawingPhase task={task} onSubmitDrawing={handleSubmitDrawing} />;
-        }
-        return <h2>Waiting for other players to submit their drawings...</h2>;
-    }
+      if (lobby.gameState === 'DRAWING_PHASE') {
+          if (task && task.type === 'DRAWING' && task.prompt) {
+              return <DrawingPhase task={task} onSubmitDrawing={handleSubmitDrawing} timer={timer} />;
+          }
+          return <h2>Waiting for other players to submit their drawings...</h2>;
+      }
 
-    if (lobby.gameState === 'DESCRIBING_PHASE') {
-        if (task && task.type === 'DESCRIBING' && task.drawing) {
-            return <DescribingPhase task={task} onSubmitDescription={handleSubmitDescription} />;
-        }
-        return <h2>Waiting for other players to submit their descriptions...</h2>;
-    }
+      if (lobby.gameState === 'DESCRIBING_PHASE') {
+          if (task && task.type === 'DESCRIBING' && task.drawing) {
+              return <DescribingPhase task={task} onSubmitDescription={handleSubmitDescription} timer={timer} />;
+          }
+          return <h2>Waiting for other players to submit their descriptions...</h2>;
+      }
 
-    if (lobby.gameState === 'REVEAL_PHASE') {
-        if (revealedBooks && lobby.players) {
-            return <RevealPage books={revealedBooks} players={lobby.players} />; // Pass players for author names
-        }
-        return <h2>Waiting for game results...</h2>;
-    }
+      if (lobby.gameState === 'REVEAL_PHASE') {
+          if (revealedBooks && lobby.players) {
+              return <RevealPage books={revealedBooks} players={lobby.players} />; // Pass players for author names
+          }
+          return <h2>Waiting for game results...</h2>;
+      }
 
-    return <h2>Game in progress...</h2>;
+      return <h2>Game in progress...</h2>;
+    } catch (e: any) {
+      return <div style={{ color: 'red' }}>An error occurred: {e.message}</div>;
+    }
   };
 
   return (
