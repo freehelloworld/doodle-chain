@@ -104,8 +104,10 @@ const handleSubmission = (gameCode, playerId, bookId, data, type) => {
 
     book.pages.push(page);
     lobby.submittedPlayers.add(playerId);
+    console.log(`Player ${playerId} submitted for ${type} in game ${gameCode}`);
 
     if (lobby.submittedPlayers.size === lobby.players.length) {
+      console.log(`All players have submitted for ${lobby.gameState} in game ${gameCode}`);
       clearInterval(lobby.timer);
       if (lobby.gameState === 'DRAWING_PHASE' || lobby.gameState === 'DESCRIBING_PHASE') {
         lobby.round++;
