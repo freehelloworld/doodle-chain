@@ -9,11 +9,17 @@ interface PromptPhaseProps {
 
 const PromptPhase: React.FC<PromptPhaseProps> = ({ task, onSubmitPrompt }) => {
   const [prompt, setPrompt] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = () => {
     if (prompt.trim()) {
       onSubmitPrompt(prompt);
+      setIsSubmitted(true);
     }
+  };
+
+  const handleEdit = () => {
+    setIsSubmitted(false);
   };
 
   return (
@@ -29,10 +35,15 @@ const PromptPhase: React.FC<PromptPhaseProps> = ({ task, onSubmitPrompt }) => {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="e.g., A cat wearing a tiny hat"
+                disabled={isSubmitted}
               />
             </div>
             <div className="d-grid gap-2">
-              <button className="btn btn-primary" onClick={handleSubmit}>Submit</button>
+              {isSubmitted ? (
+                <button className="btn btn-secondary" onClick={handleEdit}>Edit</button>
+              ) : (
+                <button className="btn btn-primary" onClick={handleSubmit}>Submit</button>
+              )}
             </div>
           </div>
         </div>
