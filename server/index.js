@@ -93,18 +93,31 @@ const assignTasks = (lobby, currentPhase) => {
 
 const handleSubmission = (gameCode, playerId, bookId, data, type) => {
   const lobby = lobbies[gameCode];
-  if (!lobby || lobby.submittedPlayers.has(playerId)) return;
+  if (!lobby) return;
 
   const book = lobby.books[bookId];
   if (book) {
-    const page = { type, authorId: playerId };
-    if (type === 'PROMPT') page.text = data;
-    else if (type === 'DRAWING') page.dataUrl = data;
-    else if (type === 'DESCRIBING') page.text = data;
+    const existingPageIndex = book.pages.findIndex(p => p.authorId === playerId && p.type === type);
 
-    book.pages.push(page);
-    lobby.submittedPlayers.add(playerId);
-    console.log(`Player ${playerId} submitted for ${type} in game ${gameCode}`);
+    if (existingPageIndex !== -1) {
+      // Update existing page
+      if (type === 'DRAWING') {
+        book.pages[existingPageIndex].dataUrl = data;
+      } else {
+        book.pages[existingPageIndex].text = data;
+      }
+      console.log(`Player ${playerId} resubmitted for ${type} in game ${gameCode}`);
+    } else {
+      // Create new page
+      const page = { type, authorId: playerId };
+      if (type === 'PROMPT') page.text = data;
+      else if (type === 'DRAWING') page.dataUrl = data;
+      else if (type === 'DESCRIBING') page.text = data;
+
+      book.pages.push(page);
+      lobby.submittedPlayers.add(playerId);
+      console.log(`Player ${playerId} submitted for ${type} in game ${gameCode}`);
+    }
 
     if (lobby.submittedPlayers.size === lobby.players.length) {
       console.log(`All players have submitted for ${lobby.gameState} in game ${gameCode}`);

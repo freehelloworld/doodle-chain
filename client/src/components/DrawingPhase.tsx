@@ -11,26 +11,29 @@ interface DrawingPhaseProps {
 
 const DrawingPhase: React.FC<DrawingPhaseProps> = ({ task, onSubmitDrawing, timer }) => {
   const [drawingData, setDrawingData] = useState<string | null>(null);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
-    if (timer === 0 && !hasSubmitted) {
+    if (timer === 0) {
       onSubmitDrawing(drawingData || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=');
-      setHasSubmitted(true);
     }
-  }, [timer, drawingData, onSubmitDrawing, hasSubmitted]);
+  }, [timer, drawingData, onSubmitDrawing]);
 
   const handleDraw = (dataUrl: string) => {
     setDrawingData(dataUrl);
   };
 
   const handleSubmit = () => {
-    if (drawingData && !hasSubmitted) {
+    if (drawingData) {
       onSubmitDrawing(drawingData);
-      setHasSubmitted(true);
-    } else if (!drawingData) {
+      setIsSubmitted(true);
+    } else {
       alert('Please draw something before submitting!');
     }
+  };
+
+  const handleEdit = () => {
+    setIsSubmitted(false);
   };
 
   return (
@@ -46,10 +49,14 @@ const DrawingPhase: React.FC<DrawingPhaseProps> = ({ task, onSubmitDrawing, time
               <em>"{task.prompt}"</em>
             </p>
             <div className="mt-4">
-              <DrawingCanvas onDraw={handleDraw} />
+              <DrawingCanvas onDraw={handleDraw} disabled={isSubmitted} />
             </div>
             <div className="d-grid gap-2 mt-4">
-              <button className="btn btn-primary" onClick={handleSubmit} disabled={hasSubmitted}>Submit Drawing</button>
+              {isSubmitted ? (
+                <button className="btn btn-secondary" onClick={handleEdit}>Edit</button>
+              ) : (
+                <button className="btn btn-primary" onClick={handleSubmit}>Submit Drawing</button>
+              )}
             </div>
           </div>
         </div>

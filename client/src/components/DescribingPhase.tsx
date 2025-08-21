@@ -10,6 +10,7 @@ interface DescribingPhaseProps {
 
 const DescribingPhase: React.FC<DescribingPhaseProps> = ({ task, onSubmitDescription, timer }) => {
   const [description, setDescription] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
     if (timer === 0) {
@@ -20,7 +21,12 @@ const DescribingPhase: React.FC<DescribingPhaseProps> = ({ task, onSubmitDescrip
   const handleSubmit = () => {
     if (description.trim()) {
       onSubmitDescription(description);
+      setIsSubmitted(true);
     }
+  };
+
+  const handleEdit = () => {
+    setIsSubmitted(false);
   };
 
   return (
@@ -40,10 +46,15 @@ const DescribingPhase: React.FC<DescribingPhaseProps> = ({ task, onSubmitDescrip
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="e.g., A dog chasing a butterfly"
+                disabled={isSubmitted}
               />
             </div>
             <div className="d-grid gap-2">
-              <button className="btn btn-primary" onClick={handleSubmit}>Submit Description</button>
+              {isSubmitted ? (
+                <button className="btn btn-secondary" onClick={handleEdit}>Edit</button>
+              ) : (
+                <button className="btn btn-primary" onClick={handleSubmit}>Submit Description</button>
+              )}
             </div>
           </div>
         </div>
