@@ -149,7 +149,7 @@ function App() {
 
       if (lobby.gameState === 'PROMPT_PHASE') {
           if (task && task.type === 'PROMPT' && task.bookOwnerName) {
-              return <PromptPhase task={task} onSubmitPrompt={handleSubmitPrompt} />;
+              return <PromptPhase task={task} onSubmitPrompt={handleSubmitPrompt} timer={timer} />;
           }
           return <h2>Waiting for other players to submit their prompts...</h2>;
       }

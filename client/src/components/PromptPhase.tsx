@@ -1,15 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface PromptPhaseProps {
   task: {
     bookOwnerName?: string;
   };
   onSubmitPrompt: (prompt: string) => void;
+  timer: number | null;
 }
 
-const PromptPhase: React.FC<PromptPhaseProps> = ({ task, onSubmitPrompt }) => {
+const PromptPhase: React.FC<PromptPhaseProps> = ({ task, onSubmitPrompt, timer }) => {
   const [prompt, setPrompt] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (timer === 0 && !isSubmitted) {
+      onSubmitPrompt(prompt || 'Timeout');
+      setIsSubmitted(true);
+    }
+  }, [timer, prompt, onSubmitPrompt, isSubmitted]);
 
   const handleSubmit = () => {
     if (prompt.trim()) {
@@ -27,7 +35,10 @@ const PromptPhase: React.FC<PromptPhaseProps> = ({ task, onSubmitPrompt }) => {
       <div className="row justify-content-center">
         <div className="col-md-8">
           <div className="card p-4">
-            <h2 className="card-title mb-4">Write a sentence for {task.bookOwnerName}'s book!</h2>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h2 className="card-title mb-0">Write a sentence for {task.bookOwnerName}'s book!</h2>
+              {timer !== null && <span className="badge bg-secondary fs-4">{timer}</span>}
+            </div>
             <div className="mb-3">
               <textarea
                 className="form-control"

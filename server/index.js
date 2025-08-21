@@ -159,7 +159,9 @@ const handleTimeout = (gameCode) => {
 
   playersToSubmit.forEach(player => {
     const bookId = lobby.bookOrder[player.id];
-    if (lobby.gameState === 'DRAWING_PHASE') {
+    if (lobby.gameState === 'PROMPT_PHASE') {
+      handleSubmission(gameCode, player.id, bookId, 'Timeout', 'PROMPT');
+    } else if (lobby.gameState === 'DRAWING_PHASE') {
       handleSubmission(gameCode, player.id, bookId, 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'DRAWING');
     } else if (lobby.gameState === 'DESCRIBING_PHASE') {
       handleSubmission(gameCode, player.id, bookId, 'Timeout', 'DESCRIBING');
@@ -217,6 +219,7 @@ io.on('connection', (socket) => {
       });
 
       assignTasks(lobby, 'PROMPT_PHASE');
+      startTimer(gameCode, lobby.timerSettings.describingTimer, () => handleTimeout(gameCode));
       io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
     }
   });
