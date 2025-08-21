@@ -23,9 +23,10 @@ interface RevealPageProps {
   currentBookIndex: number;
   isHost: boolean;
   onNextBook: () => void;
+  onRestartGame: () => void;
 }
 
-const RevealPage: React.FC<RevealPageProps> = ({ books, players, currentBookIndex, isHost, onNextBook }) => {
+const RevealPage: React.FC<RevealPageProps> = ({ books, players, currentBookIndex, isHost, onNextBook, onRestartGame }) => {
   const getAuthorName = (authorId: string) => {
     const player = players.find(p => p.id === authorId);
     return player ? player.name : 'Unknown';
@@ -66,9 +67,15 @@ const RevealPage: React.FC<RevealPageProps> = ({ books, players, currentBookInde
       )}
       {isHost && (
         <div className="text-center mt-4">
-          <button className="btn btn-primary" onClick={onNextBook} disabled={currentBookIndex >= bookIds.length - 1}>
-            Next Book
-          </button>
+          {currentBookIndex >= bookIds.length - 1 ? (
+            <button className="btn btn-success" onClick={onRestartGame}>
+              Restart Game
+            </button>
+          ) : (
+            <button className="btn btn-primary" onClick={onNextBook}>
+              Next Book
+            </button>
+          )}
         </div>
       )}
     </div>

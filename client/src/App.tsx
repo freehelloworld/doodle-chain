@@ -104,6 +104,12 @@ function App() {
     }
   };
 
+  const handleRestartGame = () => {
+    if (lobby) {
+      socket.emit('restart-game', { gameCode: lobby.gameCode });
+    }
+  };
+
   const handleSubmitPrompt = useCallback((prompt: string) => {
     if (lobby && task) {
         socket.emit('submit-prompt', { gameCode: lobby.gameCode, bookId: task.bookId, prompt });
@@ -164,7 +170,7 @@ function App() {
 
       if (lobby.gameState === 'REVEAL_PHASE') {
           if (revealedBooks && lobby.players) {
-              return <RevealPage books={revealedBooks} players={lobby.players} currentBookIndex={lobby.currentBookIndex} isHost={amIHost} onNextBook={handleNextBook} />; // Pass players for author names
+              return <RevealPage books={revealedBooks} players={lobby.players} currentBookIndex={lobby.currentBookIndex} isHost={amIHost} onNextBook={handleNextBook} onRestartGame={handleRestartGame} />; // Pass players for author names
           }
           return <h2>Waiting for game results...</h2>;
       }

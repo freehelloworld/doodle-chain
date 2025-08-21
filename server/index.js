@@ -50,16 +50,19 @@ const startTimer = (gameCode, duration, onTimeout) => {
 const assignTasks = (lobby, currentPhase) => {
   lobby.submittedPlayers = new Set();
   const players = lobby.players.map(p => p.id);
-  const currentBookOrder = { ...lobby.bookOrder };
-  const newBookOrder = {};
 
-  players.forEach((playerId, index) => {
-    const nextPlayerIndex = (index + 1) % players.length;
-    const nextPlayerId = players[nextPlayerIndex];
-    newBookOrder[nextPlayerId] = currentBookOrder[playerId];
-  });
+  if (currentPhase !== 'PROMPT_PHASE') {
+    const currentBookOrder = { ...lobby.bookOrder };
+    const newBookOrder = {};
 
-  lobby.bookOrder = newBookOrder;
+    players.forEach((playerId, index) => {
+      const nextPlayerIndex = (index + 1) % players.length;
+      const nextPlayerId = players[nextPlayerIndex];
+      newBookOrder[nextPlayerId] = currentBookOrder[playerId];
+    });
+
+    lobby.bookOrder = newBookOrder;
+  }
 
   players.forEach(playerId => {
     const bookId = lobby.bookOrder[playerId];
@@ -239,6 +242,21 @@ io.on('connection', (socket) => {
         lobby.currentBookIndex++;
         io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
       }
+    }
+  });
+
+  socket.on('restart-game', ({ gameCode }) => {
+    const lobby = lobbies[gameCode];
+    const player = lobby.players.find(p => p.id === socket.id);
+
+    if (lobby && player && player.isHost) {
+      lobby.gameState = 'LOBBY';
+      lobby.round = 0;
+      lobby.books = {};
+      lobby.bookOrder = {};
+      lobby.submittedPlayers = new Set();
+      lobby.currentBookIndex = 0;
+      io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
     }
   });
 
