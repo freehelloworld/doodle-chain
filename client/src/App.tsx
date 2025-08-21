@@ -100,21 +100,18 @@ function App() {
   const handleSubmitPrompt = useCallback((prompt: string) => {
     if (lobby && task) {
         socket.emit('submit-prompt', { gameCode: lobby.gameCode, bookId: task.bookId, prompt });
-        setTask(null); // Clear task after submission to show waiting message
     }
   }, [lobby, task]);
 
   const handleSubmitDrawing = useCallback((drawingDataUrl: string) => {
     if (lobby && task) {
         socket.emit('submit-drawing', { gameCode: lobby.gameCode, bookId: task.bookId, drawing: drawingDataUrl });
-        setTask(null); // Clear task after submission
     }
   }, [lobby, task]);
 
   const handleSubmitDescription = useCallback((description: string) => {
     if (lobby && task) {
         socket.emit('submit-description', { gameCode: lobby.gameCode, bookId: task.bookId, description });
-        setTask(null); // Clear task after submission
     }
   }, [lobby, task]);
 
