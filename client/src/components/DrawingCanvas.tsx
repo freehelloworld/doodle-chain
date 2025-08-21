@@ -6,6 +6,7 @@ interface DrawingCanvasProps {
   width?: number;
   height?: number;
   onDraw: (dataUrl: string) => void;
+  disabled?: boolean;
 }
 
 export interface DrawingCanvasRef {
@@ -14,7 +15,7 @@ export interface DrawingCanvasRef {
 
 type Tool = 'pen' | 'eraser' | 'circle' | 'rectangle' | 'bucket';
 
-const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCanvasProps> = ({ width = 800, height = 600, onDraw }, ref) => {
+const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCanvasProps> = ({ width = 800, height = 600, onDraw, disabled = false }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -92,7 +93,7 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
   };
 
   const startDrawing = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!context) return;
+    if (!context || disabled) return;
     const { offsetX, offsetY } = nativeEvent;
     if (tool === 'bucket') {
       floodFill(context, offsetX, offsetY, brushColor);
@@ -170,6 +171,7 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
           className="form-control form-control-color mb-3"
           value={brushColor}
           onChange={(e) => setBrushColor(e.target.value)}
+          disabled={disabled}
         />
         <div className="row g-1" style={{ maxWidth: '100px' }}>
           {BASIC_COLORS.map((color, index) => (
@@ -182,6 +184,7 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
                   border: `1px solid ${brushColor === color ? '#000' : '#ccc'}`,
                 }}
                 onClick={() => setBrushColor(color)}
+                disabled={disabled}
               ></button>
             </div>
           ))}
@@ -200,12 +203,13 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
             max="20"
             value={brushSize}
             onChange={(e) => setBrushSize(parseInt(e.target.value))}
+            disabled={disabled}
           />
           <div className="btn-group me-3" role="group">
-            <button type="button" className="btn btn-outline-secondary" onClick={undo} disabled={historyIndex <= 0}>Undo</button>
-            <button type="button" className="btn btn-outline-secondary" onClick={redo} disabled={historyIndex >= history.length - 1}>Redo</button>
+            <button type="button" className="btn btn-outline-secondary" onClick={undo} disabled={historyIndex <= 0 || disabled}>Undo</button>
+            <button type="button" className="btn btn-outline-secondary" onClick={redo} disabled={historyIndex >= history.length - 1 || disabled}>Redo</button>
           </div>
-          <button type="button" className="btn btn-secondary" onClick={clearCanvas}>Clear</button>
+          <button type="button" className="btn btn-secondary" onClick={clearCanvas} disabled={disabled}>Clear</button>
         </div>
         <canvas
           ref={canvasRef}
@@ -216,18 +220,18 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
           className="border border-dark"
-          style={{ cursor: 'crosshair' }}
+          style={{ cursor: disabled ? 'not-allowed' : 'crosshair' }}
         />
       </div>
 
       {/* Right Sidebar for Tools */}
       <div className="d-flex flex-column align-items-center ms-3 p-2 border rounded">
         <div className="btn-group-vertical" role="group">
-          <button type="button" className={`btn ${tool === 'pen' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('pen')}>Pen</button>
-          <button type="button" className={`btn ${tool === 'eraser' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('eraser')}>Eraser</button>
-          <button type="button" className={`btn ${tool === 'circle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('circle')}>Circle</button>
-          <button type="button" className={`btn ${tool === 'rectangle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('rectangle')}>Rectangle</button>
-          <button type="button" className={`btn ${tool === 'bucket' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('bucket')}>Bucket</button>
+          <button type="button" className={`btn ${tool === 'pen' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('pen')} disabled={disabled}>Pen</button>
+          <button type="button" className={`btn ${tool === 'eraser' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('eraser')} disabled={disabled}>Eraser</button>
+          <button type="button" className={`btn ${tool === 'circle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('circle')} disabled={disabled}>Circle</button>
+          <button type="button" className={`btn ${tool === 'rectangle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('rectangle')} disabled={disabled}>Rectangle</button>
+          <button type="button" className={`btn ${tool === 'bucket' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('bucket')} disabled={disabled}>Bucket</button>
         </div>
       </div>
     </div>
