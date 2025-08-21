@@ -19,51 +19,58 @@ interface Book {
 
 interface RevealPageProps {
   books: { [key: string]: Book };
-  players: Player[]; // To map authorId to author name
+  players: Player[];
+  currentBookIndex: number;
+  isHost: boolean;
+  onNextBook: () => void;
 }
 
-const RevealPage: React.FC<RevealPageProps> = ({ books, players }) => {
+const RevealPage: React.FC<RevealPageProps> = ({ books, players, currentBookIndex, isHost, onNextBook }) => {
   const getAuthorName = (authorId: string) => {
     const player = players.find(p => p.id === authorId);
     return player ? player.name : 'Unknown';
   };
 
+  const bookIds = Object.keys(books);
+  const currentBookId = bookIds[currentBookIndex];
+  const currentBook = books[currentBookId];
+
   return (
     <div className="container mt-5">
-      <h2 className="text-center mb-4">Game Over! The Reveals:</h2>
-      <div className="accordion" id="revealAccordion">
-        {Object.values(books).map((book, bookIndex) => (
-          <div className="accordion-item" key={book.owner.id}>
-            <h2 className="accordion-header" id={`heading${bookIndex}`}>
-              <button className="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target={`#collapse${bookIndex}`} aria-expanded="true" aria-controls={`collapse${bookIndex}`}>
-                Book by {book.owner.name}
-              </button>
-            </h2>
-            <div id={`collapse${bookIndex}`} className="accordion-collapse collapse show" aria-labelledby={`heading${bookIndex}`} data-bs-parent="#revealAccordion">
-              <div className="accordion-body">
-                {book.pages.map((page, pageIndex) => (
-                  <div key={pageIndex} className="card mb-3">
-                    <div className="card-body">
-                      {page.type === 'PROMPT' && (
-                        <p className="card-text"><strong>Prompt:</strong> "{page.text}" (by {getAuthorName(page.authorId)})</p>
-                      )}
-                      {page.type === 'DRAWING' && (
-                        <div>
-                          <p className="card-text"><strong>Drawing:</strong> (by {getAuthorName(page.authorId)})</p>
-                          <img src={page.dataUrl} alt="Drawing" className="img-fluid rounded" />
-                        </div>
-                      )}
-                      {page.type === 'DESCRIBING' && (
-                        <p className="card-text"><strong>Description:</strong> "{page.text}" (by {getAuthorName(page.authorId)})</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+      {currentBook && (
+        <div className="card mb-3">
+          <div className="card-header">
+            <h3>{currentBook.owner.name}'s Book</h3>
           </div>
-        ))}
-      </div>
+          <div className="card-body">
+            {currentBook.pages.map((page, pageIndex) => (
+              <div key={pageIndex} className="card mb-3">
+                <div className="card-body">
+                  {page.type === 'PROMPT' && (
+                    <p className="card-text"><strong>Prompt:</strong> "{page.text}" (by {getAuthorName(page.authorId)})</p>
+                  )}
+                  {page.type === 'DRAWING' && (
+                    <div>
+                      <p className="card-text"><strong>Drawing:</strong> (by {getAuthorName(page.authorId)})</p>
+                      <img src={page.dataUrl} alt="Drawing" className="img-fluid rounded" />
+                    </div>
+                  )}
+                  {page.type === 'DESCRIBING' && (
+                    <p className="card-text"><strong>Description:</strong> "{page.text}" (by {getAuthorName(page.authorId)})</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {isHost && (
+        <div className="text-center mt-4">
+          <button className="btn btn-primary" onClick={onNextBook} disabled={currentBookIndex >= bookIds.length - 1}>
+            Next Book
+          </button>
+        </div>
+      )}
     </div>
   );
 };

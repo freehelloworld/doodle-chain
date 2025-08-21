@@ -126,6 +126,7 @@ const handleSubmission = (gameCode, playerId, bookId, data, type) => {
         lobby.round++;
         if (lobby.round > lobby.players.length) {
           lobby.gameState = 'REVEAL_PHASE';
+          lobby.currentBookIndex = 0;
           io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
         } else {
           lobby.gameState = lobby.gameState === 'DRAWING_PHASE' ? 'DESCRIBING_PHASE' : 'DRAWING_PHASE';
@@ -227,6 +228,18 @@ io.on('connection', (socket) => {
 
   socket.on('submit-description', ({ gameCode, bookId, description }) => {
     handleSubmission(gameCode, socket.id, bookId, description, 'DESCRIBING');
+  });
+
+  socket.on('next-book', ({ gameCode }) => {
+    const lobby = lobbies[gameCode];
+    const player = lobby.players.find(p => p.id === socket.id);
+
+    if (lobby && player && player.isHost) {
+      if (lobby.currentBookIndex < lobby.players.length - 1) {
+        lobby.currentBookIndex++;
+        io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
+      }
+    }
   });
 
   socket.on('disconnect', () => {
