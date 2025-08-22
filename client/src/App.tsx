@@ -23,6 +23,7 @@ interface LobbyState {
   bookOrder: { [key: string]: string };
   books: { [key: string]: Book };
   timer: number;
+  currentBookIndex: number;
 }
 
 interface Task {
@@ -97,6 +98,18 @@ function App() {
     }
   };
 
+  const handleNextBook = () => {
+    if (lobby) {
+      socket.emit('next-book', { gameCode: lobby.gameCode });
+    }
+  };
+
+  const handleRestartGame = () => {
+    if (lobby) {
+      socket.emit('restart-game', { gameCode: lobby.gameCode });
+    }
+  };
+
   const handleSubmitPrompt = useCallback((prompt: string) => {
     if (lobby && task) {
         socket.emit('submit-prompt', { gameCode: lobby.gameCode, bookId: task.bookId, prompt });
@@ -136,7 +149,7 @@ function App() {
 
       if (lobby.gameState === 'PROMPT_PHASE') {
           if (task && task.type === 'PROMPT' && task.bookOwnerName) {
-              return <PromptPhase task={task} onSubmitPrompt={handleSubmitPrompt} />;
+              return <PromptPhase task={task} onSubmitPrompt={handleSubmitPrompt} timer={timer} />;
           }
           return <h2>Waiting for other players to submit their prompts...</h2>;
       }
@@ -157,7 +170,7 @@ function App() {
 
       if (lobby.gameState === 'REVEAL_PHASE') {
           if (revealedBooks && lobby.players) {
-              return <RevealPage books={revealedBooks} players={lobby.players} />; // Pass players for author names
+              return <RevealPage books={revealedBooks} players={lobby.players} currentBookIndex={lobby.currentBookIndex} isHost={amIHost} onNextBook={handleNextBook} onRestartGame={handleRestartGame} />; // Pass players for author names
           }
           return <h2>Waiting for game results...</h2>;
       }

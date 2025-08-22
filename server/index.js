@@ -50,16 +50,19 @@ const startTimer = (gameCode, duration, onTimeout) => {
 const assignTasks = (lobby, currentPhase) => {
   lobby.submittedPlayers = new Set();
   const players = lobby.players.map(p => p.id);
-  const currentBookOrder = { ...lobby.bookOrder };
-  const newBookOrder = {};
 
-  players.forEach((playerId, index) => {
-    const nextPlayerIndex = (index + 1) % players.length;
-    const nextPlayerId = players[nextPlayerIndex];
-    newBookOrder[nextPlayerId] = currentBookOrder[playerId];
-  });
+  if (currentPhase !== 'PROMPT_PHASE') {
+    const currentBookOrder = { ...lobby.bookOrder };
+    const newBookOrder = {};
 
-  lobby.bookOrder = newBookOrder;
+    players.forEach((playerId, index) => {
+      const nextPlayerIndex = (index + 1) % players.length;
+      const nextPlayerId = players[nextPlayerIndex];
+      newBookOrder[nextPlayerId] = currentBookOrder[playerId];
+    });
+
+    lobby.bookOrder = newBookOrder;
+  }
 
   players.forEach(playerId => {
     const bookId = lobby.bookOrder[playerId];
@@ -126,6 +129,7 @@ const handleSubmission = (gameCode, playerId, bookId, data, type) => {
         lobby.round++;
         if (lobby.round > lobby.players.length) {
           lobby.gameState = 'REVEAL_PHASE';
+          lobby.currentBookIndex = 0;
           io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
         } else {
           lobby.gameState = lobby.gameState === 'DRAWING_PHASE' ? 'DESCRIBING_PHASE' : 'DRAWING_PHASE';
@@ -155,7 +159,9 @@ const handleTimeout = (gameCode) => {
 
   playersToSubmit.forEach(player => {
     const bookId = lobby.bookOrder[player.id];
-    if (lobby.gameState === 'DRAWING_PHASE') {
+    if (lobby.gameState === 'PROMPT_PHASE') {
+      handleSubmission(gameCode, player.id, bookId, 'Timeout', 'PROMPT');
+    } else if (lobby.gameState === 'DRAWING_PHASE') {
       handleSubmission(gameCode, player.id, bookId, 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=', 'DRAWING');
     } else if (lobby.gameState === 'DESCRIBING_PHASE') {
       handleSubmission(gameCode, player.id, bookId, 'Timeout', 'DESCRIBING');
@@ -213,6 +219,7 @@ io.on('connection', (socket) => {
       });
 
       assignTasks(lobby, 'PROMPT_PHASE');
+      startTimer(gameCode, lobby.timerSettings.describingTimer, () => handleTimeout(gameCode));
       io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
     }
   });
@@ -227,6 +234,33 @@ io.on('connection', (socket) => {
 
   socket.on('submit-description', ({ gameCode, bookId, description }) => {
     handleSubmission(gameCode, socket.id, bookId, description, 'DESCRIBING');
+  });
+
+  socket.on('next-book', ({ gameCode }) => {
+    const lobby = lobbies[gameCode];
+    const player = lobby.players.find(p => p.id === socket.id);
+
+    if (lobby && player && player.isHost) {
+      if (lobby.currentBookIndex < lobby.players.length - 1) {
+        lobby.currentBookIndex++;
+        io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
+      }
+    }
+  });
+
+  socket.on('restart-game', ({ gameCode }) => {
+    const lobby = lobbies[gameCode];
+    const player = lobby.players.find(p => p.id === socket.id);
+
+    if (lobby && player && player.isHost) {
+      lobby.gameState = 'LOBBY';
+      lobby.round = 0;
+      lobby.books = {};
+      lobby.bookOrder = {};
+      lobby.submittedPlayers = new Set();
+      lobby.currentBookIndex = 0;
+      io.to(gameCode).emit('lobby-update', getSanitizedLobby(lobby));
+    }
   });
 
   socket.on('disconnect', () => {
