@@ -1,5 +1,24 @@
-#root {
-  text-align: center;
+body, #root {
+  height: 100vh;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  /* align-items: center; */
+  background-color: #f0f0f0;
+  padding-top: 2rem
+}
+
+.App {
+  width: 80%;
+  height: 90vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: white;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .logo {

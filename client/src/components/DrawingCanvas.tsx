@@ -1,10 +1,7 @@
-
-import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import { useRef, useEffect, useState, forwardRef, useImperativeHandle, useLayoutEffect } from 'react';
 import { floodFill } from '../utils/floodFill';
 
 interface DrawingCanvasProps {
-  width?: number;
-  height?: number;
   onDraw: (dataUrl: string) => void;
   disabled?: boolean;
 }
@@ -15,7 +12,7 @@ export interface DrawingCanvasRef {
 
 type Tool = 'pen' | 'eraser' | 'circle' | 'rectangle' | 'bucket';
 
-const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCanvasProps> = ({ width = 800, height = 600, onDraw, disabled = false }, ref) => {
+const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCanvasProps> = ({ onDraw, disabled = false }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -30,29 +27,59 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
   const CANVAS_BACKGROUND_COLOR = 'white';
   const BASIC_COLORS = ['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FFA500', '#800080'];
 
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    const container = canvasContainerRef.current;
+    if (canvas && container) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        setContext(ctx);
+        const resizeCanvas = () => {
+          const { width } = container.getBoundingClientRect();
+          const aspectRatio = 2 / 1;
+          const newWidth = width;
+          const newHeight = width / aspectRatio;
+
+          const currentHistory = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+          canvas.width = newWidth;
+          canvas.height = newHeight;
+
+          if (currentHistory) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = currentHistory.width;
+            tempCanvas.height = currentHistory.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            if (tempCtx) {
+              tempCtx.putImageData(currentHistory, 0, 0);
+              ctx.drawImage(tempCanvas, 0, 0, newWidth, newHeight);
+            }
+          } else {
+            ctx.fillStyle = CANVAS_BACKGROUND_COLOR;
+            ctx.fillRect(0, 0, newWidth, newHeight);
+            saveState();
+          }
+
+          ctx.lineCap = 'round';
+          ctx.strokeStyle = tool === 'eraser' ? CANVAS_BACKGROUND_COLOR : brushColor;
+          ctx.lineWidth = brushSize;
+          onDraw(canvas.toDataURL('image/png'));
+        };
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        return () => window.removeEventListener('resize', resizeCanvas);
+      }
+    }
+  }, [tool, brushColor, brushSize]);
+
   useImperativeHandle(ref, () => ({
     getCanvasData: () => {
       return canvasRef.current?.toDataURL('image/png');
     }
   }));
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        setContext(ctx);
-        ctx.lineCap = 'round';
-        ctx.fillStyle = CANVAS_BACKGROUND_COLOR;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // Initial state, call onDraw
-        if (canvasRef.current) {
-          onDraw(canvasRef.current.toDataURL('image/png'));
-        }
-        saveState();
-      }
-    }
-  }, []);
 
   useEffect(() => {
     if (context) {
@@ -64,7 +91,7 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
   const saveState = () => {
     if (context && canvasRef.current) {
       const newHistory = history.slice(0, historyIndex + 1);
-      newHistory.push(context.getImageData(0, 0, width, height));
+      newHistory.push(context.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height));
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
     }
@@ -92,11 +119,11 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
     }
   };
 
-  const startDrawing = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!context || disabled) return;
-    const { offsetX, offsetY } = nativeEvent;
+    const { x, y } = getTransformedCoords(e.nativeEvent);
     if (tool === 'bucket') {
-      floodFill(context, offsetX, offsetY, brushColor);
+      floodFill(context, x, y, brushColor);
       saveState();
       if (canvasRef.current) {
         onDraw(canvasRef.current.toDataURL('image/png'));
@@ -104,30 +131,30 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
       return;
     }
     setIsDrawing(true);
-    setStartCoords({ x: offsetX, y: offsetY });
+    setStartCoords({ x, y });
     context.beginPath();
     if (tool === 'pen' || tool === 'eraser') {
-      context.moveTo(offsetX, offsetY);
+      context.moveTo(x, y);
     } else {
-      setSnapshot(context.getImageData(0, 0, width, height));
+      setSnapshot(context.getImageData(0, 0, canvasRef.current!.width, canvasRef.current!.height));
     }
   };
 
-  const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !context) return;
-    const { offsetX, offsetY } = nativeEvent;
+    const { x, y } = getTransformedCoords(e.nativeEvent);
 
     if (snapshot) {
       context.putImageData(snapshot, 0, 0);
     }
 
     if (tool === 'pen' || tool === 'eraser') {
-      context.lineTo(offsetX, offsetY);
+      context.lineTo(x, y);
       context.stroke();
     } else if (tool === 'rectangle') {
-      context.strokeRect(startCoords.x, startCoords.y, offsetX - startCoords.x, offsetY - startCoords.y);
+      context.strokeRect(startCoords.x, startCoords.y, x - startCoords.x, y - startCoords.y);
     } else if (tool === 'circle') {
-      const radius = Math.sqrt(Math.pow(offsetX - startCoords.x, 2) + Math.pow(offsetY - startCoords.y, 2));
+      const radius = Math.sqrt(Math.pow(x - startCoords.x, 2) + Math.pow(y - startCoords.y, 2));
       context.beginPath();
       context.arc(startCoords.x, startCoords.y, radius, 0, 2 * Math.PI);
       context.stroke();
@@ -148,24 +175,26 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
     }
   };
 
-  const getTouchCoords = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    const rect = canvasRef.current!.getBoundingClientRect();
+  const getTransformedCoords = (nativeEvent: MouseEvent | Touch) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     return {
-      x: e.touches[0].clientX - rect.left,
-      y: e.touches[0].clientY - rect.top,
+      x: (nativeEvent.clientX - rect.left) * scaleX,
+      y: (nativeEvent.clientY - rect.top) * scaleY,
     };
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const { x, y } = getTouchCoords(e);
-    startDrawing({ nativeEvent: { offsetX: x, offsetY: y } } as React.MouseEvent<HTMLCanvasElement>);
+    startDrawing({ nativeEvent: e.touches[0] } as any);
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const { x, y } = getTouchCoords(e);
-    draw({ nativeEvent: { offsetX: x, offsetY: y } } as React.MouseEvent<HTMLCanvasElement>);
+    draw({ nativeEvent: e.touches[0] } as any);
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -216,8 +245,7 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
         </div>
       </div>
 
-      {/* Canvas and Controls */}
-      <div className="d-flex flex-column align-items-center">
+      <div className="d-flex flex-column align-items-center flex-grow-1" style={{ width: '100%' }}>
         <div className="d-flex justify-content-center align-items-center mb-3">
           <label htmlFor="brushSize" className="form-label me-2">Size:</label>
           <input
@@ -236,23 +264,21 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
           </div>
           <button type="button" className="btn btn-secondary" onClick={clearCanvas} disabled={disabled}>Clear</button>
         </div>
-        <canvas
-          ref={canvasRef}
-          width={width}
-          height={height}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          className="border border-dark"
-          style={{ cursor: disabled ? 'not-allowed' : 'crosshair', touchAction: 'none' }}
-        />
+        <div ref={canvasContainerRef} className="w-100 h-100 d-flex justify-content-center align-items-center">
+          <canvas
+            ref={canvasRef}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            className="border border-dark"
+            style={{ cursor: disabled ? 'not-allowed' : 'crosshair', touchAction: 'none', maxWidth: '100%', maxHeight: '100%' }}
+          />
+        </div>
       </div>
-
-      {/* Right Sidebar for Tools */}
       <div className="d-flex flex-column align-items-center ms-3 p-2 border rounded">
         <div className="btn-group-vertical" role="group">
           <button type="button" className={`btn ${tool === 'pen' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('pen')} disabled={disabled}>Pen</button>
