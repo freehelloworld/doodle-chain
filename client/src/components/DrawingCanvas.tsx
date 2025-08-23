@@ -4,6 +4,7 @@ import { floodFill } from '../utils/floodFill';
 interface DrawingCanvasProps {
   onDraw: (dataUrl: string) => void;
   disabled?: boolean;
+  timer: number | null;
 }
 
 export interface DrawingCanvasRef {
@@ -12,7 +13,7 @@ export interface DrawingCanvasRef {
 
 type Tool = 'pen' | 'eraser' | 'circle' | 'rectangle' | 'bucket';
 
-const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCanvasProps> = ({ onDraw, disabled = false }, ref) => {
+const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCanvasProps> = ({ onDraw, disabled = false, timer }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -215,7 +216,7 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-start" style={{ width: '100%' }}>
+    <div className="d-flex justify-content-center align-items-center" style={{ width: '100%' }}>
       {/* Left Sidebar for Colors */}
       <div className="d-flex flex-column align-items-center me-3 p-2 border rounded">
         <label htmlFor="brushColor" className="form-label mb-2">Custom Color:</label>
@@ -246,7 +247,21 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
       </div>
 
       <div className="d-flex flex-column align-items-center flex-grow-1" style={{ width: '100%' }}>
-        <div className="d-flex justify-content-center align-items-center mb-3">
+        <div ref={canvasContainerRef} className="w-100 h-100 d-flex justify-content-center align-items-center">
+          <canvas
+            ref={canvasRef}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            className="border border-dark"
+            style={{ cursor: disabled ? 'not-allowed' : 'crosshair', touchAction: 'none', maxWidth: '100%', maxHeight: '100%' }}
+          />
+        </div>
+        <div className="d-flex justify-content-center align-items-center mt-3">
           <label htmlFor="brushSize" className="form-label me-2">Size:</label>
           <input
             type="range"
@@ -264,28 +279,17 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
           </div>
           <button type="button" className="btn btn-secondary" onClick={clearCanvas} disabled={disabled}>Clear</button>
         </div>
-        <div ref={canvasContainerRef} className="w-100 h-100 d-flex justify-content-center align-items-center">
-          <canvas
-            ref={canvasRef}
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            className="border border-dark"
-            style={{ cursor: disabled ? 'not-allowed' : 'crosshair', touchAction: 'none', maxWidth: '100%', maxHeight: '100%' }}
-          />
-        </div>
       </div>
-      <div className="d-flex flex-column align-items-center ms-3 p-2 border rounded">
-        <div className="btn-group-vertical" role="group">
-          <button type="button" className={`btn ${tool === 'pen' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('pen')} disabled={disabled}>Pen</button>
-          <button type="button" className={`btn ${tool === 'eraser' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('eraser')} disabled={disabled}>Eraser</button>
-          <button type="button" className={`btn ${tool === 'circle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('circle')} disabled={disabled}>Circle</button>
-          <button type="button" className={`btn ${tool === 'rectangle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('rectangle')} disabled={disabled}>Rectangle</button>
-          <button type="button" className={`btn ${tool === 'bucket' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('bucket')} disabled={disabled}>Bucket</button>
+      <div className="d-flex flex-column align-items-center ms-3">
+        {timer !== null && <span className="badge bg-secondary fs-6 mb-2">{timer}</span>}
+        <div className="d-flex flex-column align-items-center justify-content-center p-2 border rounded h-100">
+            <div className="btn-group-vertical" role="group">
+              <button type="button" className={`btn ${tool === 'pen' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('pen')} disabled={disabled}>Pen</button>
+              <button type="button" className={`btn ${tool === 'eraser' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('eraser')} disabled={disabled}>Eraser</button>
+              <button type="button" className={`btn ${tool === 'circle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('circle')} disabled={disabled}>Circle</button>
+              <button type="button" className={`btn ${tool === 'rectangle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('rectangle')} disabled={disabled}>Rectangle</button>
+              <button type="button" className={`btn ${tool === 'bucket' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('bucket')} disabled={disabled}>Bucket</button>
+            </div>
         </div>
       </div>
     </div>

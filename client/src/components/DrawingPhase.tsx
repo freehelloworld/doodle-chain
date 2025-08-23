@@ -41,21 +41,22 @@ const DrawingPhase: React.FC<DrawingPhaseProps> = ({ task, onSubmitDrawing, time
       <div className="text-center">
         <div className="d-flex justify-content-between align-items-center mb-2">
           <h2 className="card-title h5 mb-0">Your prompt to draw is:</h2>
-          {timer !== null && <span className="badge bg-secondary fs-6">{timer}</span>}
         </div>
         <p className="card-text p-2 bg-light border rounded small">
           <em>"{task.prompt}"</em>
         </p>
       </div>
-      <div className="flex-grow-1 my-2 d-flex justify-content-center align-items-center" style={{ minHeight: 0 }}>
-        <DrawingCanvas onDraw={handleDraw} disabled={isSubmitted} />
-      </div>
-      <div className="d-grid gap-2">
-        {isSubmitted ? (
-          <button className="btn btn-secondary btn-sm" onClick={handleEdit}>Edit</button>
-        ) : (
-          <button className="btn btn-primary btn-sm" onClick={handleSubmit}>Submit Drawing</button>
-        )}
+      <div className="flex-grow-1 my-2 d-flex flex-column justify-content-center align-items-center" style={{ minHeight: 0 }}>
+        <div className="w-100 flex-grow-1 d-flex justify-content-center align-items-center">
+          <DrawingCanvas onDraw={handleDraw} disabled={isSubmitted} timer={timer} />
+        </div>
+        <div className="d-grid gap-2 mt-3">
+          {isSubmitted ? (
+            <button className="btn btn-secondary btn-sm" onClick={handleEdit}>Edit</button>
+          ) : (
+            <button className="btn btn-primary btn-sm" onClick={handleSubmit}>Submit Drawing</button>
+          )}
+        </div>
       </div>
     </div>
   );
