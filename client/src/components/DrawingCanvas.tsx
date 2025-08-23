@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, forwardRef, useImperativeHandle, useLayoutEffect } from 'react';
+import AnalogClock from './AnalogClock';
 import { floodFill } from '../utils/floodFill';
 
 interface DrawingCanvasProps {
@@ -17,7 +18,7 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
-  const [brushColor, setBrushColor] = useState('black');
+  const [brushColor, setBrushColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(5);
   const [tool, setTool] = useState<Tool>('pen');
   const [startCoords, setStartCoords] = useState({ x: 0, y: 0 });
@@ -215,34 +216,42 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
     }
   };
 
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <div className="d-flex justify-content-center align-items-center" style={{ width: '100%' }}>
+    <div className="d-flex justify-content-center align-items-start" style={{ width: '100%' }}>
       {/* Left Sidebar for Colors */}
-      <div className="d-flex flex-column align-items-center me-3 p-2 border rounded">
-        <label htmlFor="brushColor" className="form-label mb-2">Custom Color:</label>
-        <input
-          type="color"
-          id="brushColor"
-          className="form-control form-control-color mb-3"
-          value={brushColor}
-          onChange={(e) => setBrushColor(e.target.value)}
-          disabled={disabled}
-        />
-        <div className="row g-1" style={{ maxWidth: '100px' }}>
-          {BASIC_COLORS.map((color, index) => (
-            <div key={index} className="col-6 d-grid">
-              <button
-                className="btn btn-sm"
-                style={{
-                  backgroundColor: color,
-                  height: '30px',
-                  border: `1px solid ${brushColor === color ? '#000' : '#ccc'}`,
-                }}
-                onClick={() => setBrushColor(color)}
-                disabled={disabled}
-              ></button>
-            </div>
-          ))}
+      <div className="d-flex flex-column align-items-center me-3 h-100 justify-content-center">
+        <div className="p-2 border rounded">
+          <label htmlFor="brushColor" className="form-label mb-2">Custom Color:</label>
+          <input
+            type="color"
+            id="brushColor"
+            className="form-control form-control-color mb-3"
+            value={brushColor}
+            onChange={(e) => setBrushColor(e.target.value)}
+            disabled={disabled}
+          />
+          <div className="row g-1" style={{ maxWidth: '100px' }}>
+            {BASIC_COLORS.map((color, index) => (
+              <div key={index} className="col-6 d-grid">
+                <button
+                  className="btn btn-sm"
+                  style={{
+                    backgroundColor: color,
+                    height: '30px',
+                    border: `1px solid ${brushColor === color ? '#000' : '#ccc'}`,
+                  }}
+                  onClick={() => setBrushColor(color)}
+                  disabled={disabled}
+                ></button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -281,7 +290,8 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
         </div>
       </div>
       <div className="d-flex flex-column align-items-center ms-3">
-        {timer !== null && <span className="badge bg-secondary fs-6 mb-2">{timer}</span>}
+        {timer !== null && <AnalogClock time={timer} />}
+        {timer !== null && <span className="badge bg-secondary fs-6 mb-2">{formatTime(timer)}</span>}
         <div className="d-flex flex-column align-items-center justify-content-center p-2 border rounded h-100">
             <div className="btn-group-vertical" role="group">
               <button type="button" className={`btn ${tool === 'pen' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('pen')} disabled={disabled}>Pen</button>
