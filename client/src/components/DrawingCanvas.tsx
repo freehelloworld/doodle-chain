@@ -27,7 +27,10 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   const CANVAS_BACKGROUND_COLOR = 'white';
-  const BASIC_COLORS = ['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FFA500', '#800080'];
+  const BASIC_COLORS = [
+    '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', 
+    '#FFA500', '#800080', '#FFC0CB', '#00FFFF', '#8B4513', '#808080'
+  ];
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
@@ -228,14 +231,17 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
       <div className="d-flex flex-column align-items-center me-3 h-100 justify-content-center">
         <div className="p-2 border rounded">
           <label htmlFor="brushColor" className="form-label mb-2">Custom Color:</label>
-          <input
-            type="color"
-            id="brushColor"
-            className="form-control form-control-color mb-3"
-            value={brushColor}
-            onChange={(e) => setBrushColor(e.target.value)}
-            disabled={disabled}
-          />
+          <div className="custom-color-picker-wrapper">
+            <input
+              type="color"
+              id="brushColor"
+              className="form-control form-control-color custom-color-picker"
+              value={brushColor}
+              onChange={(e) => setBrushColor(e.target.value)}
+              disabled={disabled}
+              style={{ borderRadius: '50%' }}
+            />
+          </div>
           <div className="row g-1" style={{ maxWidth: '100px' }}>
             {BASIC_COLORS.map((color, index) => (
               <div key={index} className="col-6 d-grid">

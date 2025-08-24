@@ -8,6 +8,27 @@ body, #root {
   padding-top: 2rem
 }
 
+.form-control-color.rounded-circle {
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.form-control-color.rounded-circle::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color.rounded-circle::-webkit-color-swatch {
+  border-radius: 50%;
+  border: none;
+}
+
+.form-control-color.rounded-circle::-moz-color-swatch {
+  border-radius: 50%;
+  border: none;
+}
+
 .App {
   width: 80%;
   height: 90vh;
