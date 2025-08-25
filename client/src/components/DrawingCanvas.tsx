@@ -273,7 +273,7 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             className="border border-dark"
-            style={{ cursor: disabled ? 'not-allowed' : 'crosshair', touchAction: 'none', maxWidth: '100%', maxHeight: '100%' }}
+            style={{ cursor: disabled ? 'not-allowed' : 'crosshair', touchAction: 'none', maxWidth: '100%', maxHeight: '100%', backgroundColor: 'white' }}
           />
         </div>
         <div className="d-flex justify-content-center align-items-center mt-3">
