@@ -167,9 +167,11 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
     } else if (tool === 'rectangle') {
       context.strokeRect(startCoords.x, startCoords.y, x - startCoords.x, y - startCoords.y);
     } else if (tool === 'circle') {
-      const radius = Math.sqrt(Math.pow(x - startCoords.x, 2) + Math.pow(y - startCoords.y, 2));
+      const centerX = (startCoords.x + x) / 2;
+      const centerY = (startCoords.y + y) / 2;
+      const radius = Math.sqrt(Math.pow(x - startCoords.x, 2) + Math.pow(y - startCoords.y, 2)) / 2;
       context.beginPath();
-      context.arc(startCoords.x, startCoords.y, radius, 0, 2 * Math.PI);
+      context.arc(centerX, centerY, radius, 0, 2 * Math.PI);
       context.stroke();
     }
     if (canvasRef.current) {
