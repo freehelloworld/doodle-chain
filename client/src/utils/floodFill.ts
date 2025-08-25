@@ -25,7 +25,7 @@ function setPixel(imageData: ImageData, x: number, y: number, color: { r: number
   imageData.data[offset + 3] = color.a;
 }
 
-function colorsMatch(a: number[] | Uint8ClampedArray, b: number[] | Uint8ClampedArray, tolerance = 30) {
+function colorsMatch(a: number[] | Uint8ClampedArray, b: number[] | Uint8ClampedArray, tolerance = 2) {
   return (
     Math.abs(a[0] - b[0]) < tolerance &&
     Math.abs(a[1] - b[1]) < tolerance &&
@@ -34,35 +34,93 @@ function colorsMatch(a: number[] | Uint8ClampedArray, b: number[] | Uint8Clamped
   );
 }
 
-export function floodFill(ctx: CanvasRenderingContext2D, startX: number, startY: number, fillColor: string) {
-  const canvas = ctx.canvas;
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const startColor = getPixel(imageData, startX, startY);
-  const fillColorRgb = hexToRgb(fillColor);
+export function floodFill(ctx: CanvasRenderingContext2D, x: number, y: number, fillColor: string) {
+    const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+    const { width, height, data } = imageData;
+    const stack = [];
+    const startPos = (y * width + x) * 4;
+    const startR = data[startPos];
+    const startG = data[startPos + 1];
+    const startB = data[startPos + 2];
+    const startA = data[startPos + 3];
+    const fillColorRgb = hexToRgb(fillColor);
+    if (!fillColorRgb) return;
+    const { r: fillR, g: fillG, b: fillB } = fillColorRgb;
 
-  if (!fillColorRgb) return;
-
-  const fillColorRgba = { ...fillColorRgb, a: 255 };
-
-  if (colorsMatch(startColor, [fillColorRgba.r, fillColorRgba.g, fillColorRgba.b, fillColorRgba.a])) {
-    return; // Clicked on a color that is already the fill color
-  }
-
-  const pixelStack = [[startX, startY]];
-
-  while (pixelStack.length) {
-    const [x, y] = pixelStack.pop()!;
-    const currentColor = getPixel(imageData, x, y);
-
-    if (colorsMatch(currentColor, startColor)) {
-      setPixel(imageData, x, y, fillColorRgba);
-
-      if (x > 0) pixelStack.push([x - 1, y]);
-      if (x < canvas.width - 1) pixelStack.push([x + 1, y]);
-      if (y > 0) pixelStack.push([x, y - 1]);
-      if (y < canvas.height - 1) pixelStack.push([x, y + 1]);
+    if (
+        startR === fillR &&
+        startG === fillG &&
+        startB === fillB &&
+        startA === 255
+    ) {
+        return;
     }
-  }
 
-  ctx.putImageData(imageData, 0, 0);
+    stack.push(x, y);
+
+    while (stack.length > 0) {
+        const curY = stack.pop()!;
+        const curX = stack.pop()!;
+        let northY = curY;
+        let southY = curY;
+
+        while (northY >= 0 && matchStartColor(northY, curX)) {
+            northY--;
+        }
+        northY++;
+
+        let westX = curX;
+        while (westX >= 0 && matchStartColor(northY, westX)) {
+            colorPixel(northY, westX);
+            if (northY > 0 && matchStartColor(northY - 1, westX)) {
+                stack.push(westX, northY - 1);
+            }
+            if (northY < height - 1 && matchStartColor(northY + 1, westX)) {
+                stack.push(westX, northY + 1);
+            }
+            westX--;
+        }
+
+        let eastX = curX + 1;
+        while (eastX < width && matchStartColor(northY, eastX)) {
+            colorPixel(northY, eastX);
+            if (northY > 0 && matchStartColor(northY - 1, eastX)) {
+                stack.push(eastX, northY - 1);
+            }
+            if (northY < height - 1 && matchStartColor(northY + 1, eastX)) {
+                stack.push(eastX, northY + 1);
+            }
+            eastX++;
+        }
+
+        for (let i = westX + 1; i < eastX; i++) {
+            if (northY > 0 && !matchStartColor(northY - 1, i) && matchStartColor(northY - 1, i - 1)) {
+                stack.push(i - 1, northY - 1);
+            }
+            if (northY < height - 1 && !matchStartColor(northY + 1, i) && matchStartColor(northY + 1, i - 1)) {
+                stack.push(i - 1, northY + 1);
+            }
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    function matchStartColor(y: number, x: number) {
+        const pos = (y * width + x) * 4;
+        const tolerance = 30;
+        return (
+            Math.abs(data[pos] - startR) < tolerance &&
+            Math.abs(data[pos + 1] - startG) < tolerance &&
+            Math.abs(data[pos + 2] - startB) < tolerance &&
+            Math.abs(data[pos + 3] - startA) < tolerance
+        );
+    }
+
+    function colorPixel(y: number, x: number) {
+        const pos = (y * width + x) * 4;
+        data[pos] = fillR;
+        data[pos + 1] = fillG;
+        data[pos + 2] = fillB;
+        data[pos + 3] = 255;
+    }
 }

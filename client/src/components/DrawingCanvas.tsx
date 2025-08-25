@@ -6,6 +6,8 @@ interface DrawingCanvasProps {
   onDraw: (dataUrl: string) => void;
   disabled?: boolean;
   timer: number | null;
+  title?: string;
+  prompt?: string;
 }
 
 export interface DrawingCanvasRef {
@@ -14,7 +16,7 @@ export interface DrawingCanvasRef {
 
 type Tool = 'pen' | 'eraser' | 'circle' | 'rectangle' | 'bucket';
 
-const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCanvasProps> = ({ onDraw, disabled = false, timer }, ref) => {
+const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCanvasProps> = ({ onDraw, disabled = false, timer, title, prompt }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -66,11 +68,6 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
             ctx.fillRect(0, 0, newWidth, newHeight);
             saveState();
           }
-
-          ctx.lineCap = 'round';
-          ctx.strokeStyle = tool === 'eraser' ? CANVAS_BACKGROUND_COLOR : brushColor;
-          ctx.lineWidth = brushSize;
-          onDraw(canvas.toDataURL('image/png'));
         };
 
         resizeCanvas();
@@ -78,7 +75,18 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
         return () => window.removeEventListener('resize', resizeCanvas);
       }
     }
-  }, [tool, brushColor, brushSize]);
+  }, []);
+
+  useEffect(() => {
+    if (context) {
+        context.lineCap = 'round';
+        context.strokeStyle = tool === 'eraser' ? CANVAS_BACKGROUND_COLOR : brushColor;
+        context.lineWidth = brushSize;
+        if (canvasRef.current) {
+            onDraw(canvasRef.current.toDataURL('image/png'));
+        }
+    }
+  }, [tool, brushColor, brushSize, context]);
 
   useImperativeHandle(ref, () => ({
     getCanvasData: () => {
@@ -128,7 +136,7 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
     if (!context || disabled) return;
     const { x, y } = getTransformedCoords(e.nativeEvent);
     if (tool === 'bucket') {
-      floodFill(context, x, y, brushColor);
+      floodFill(context, Math.round(x), Math.round(y), brushColor);
       saveState();
       if (canvasRef.current) {
         onDraw(canvasRef.current.toDataURL('image/png'));
@@ -262,6 +270,14 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
       </div>
 
       <div className="d-flex flex-column align-items-center flex-grow-1" style={{ width: '100%' }}>
+        {title && prompt && (
+          <div className="text-center mb-2 w-100">
+            <h2 className="card-title h5 mb-0">{title}</h2>
+            <p className="card-text p-2 bg-light border rounded small">
+              <em>"{prompt}"</em>
+            </p>
+          </div>
+        )}
         <div ref={canvasContainerRef} className="w-100 h-100 d-flex justify-content-center align-items-center">
           <canvas
             ref={canvasRef}
