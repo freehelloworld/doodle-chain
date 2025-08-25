@@ -237,36 +237,37 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
 
   return (
     <div className="d-flex justify-content-center align-items-start" style={{ width: '100%' }}>
-      {/* Left Sidebar for Colors */}
-      <div className="d-flex flex-column align-items-center me-3 h-100 justify-content-center">
-        <div className="p-2 border rounded">
-          <label htmlFor="brushColor" className="form-label mb-2">Custom Color:</label>
-          <div className="custom-color-picker-wrapper">
-            <input
-              type="color"
-              id="brushColor"
-              className="form-control form-control-color custom-color-picker"
-              value={brushColor}
-              onChange={(e) => setBrushColor(e.target.value)}
-              disabled={disabled}
-              style={{ borderRadius: '50%' }}
-            />
-          </div>
-          <div className="row g-1" style={{ maxWidth: '100px' }}>
-            {BASIC_COLORS.map((color, index) => (
-              <div key={index} className="col-6 d-grid">
-                <button
-                  className="btn btn-sm"
-                  style={{
-                    backgroundColor: color,
-                    height: '30px',
-                    border: `1px solid ${brushColor === color ? '#000' : '#ccc'}`,
-                  }}
-                  onClick={() => setBrushColor(color)}
-                  disabled={disabled}
-                ></button>
-              </div>
-            ))}
+      <div className="d-flex flex-column align-items-center me-3 h-100 justify-content-start">
+        <div style={{ paddingTop: '5rem' }}>
+          <div className="p-2 border rounded">
+            <label htmlFor="brushColor" className="form-label mb-2">Custom Color:</label>
+            <div className="custom-color-picker-wrapper">
+              <input
+                type="color"
+                id="brushColor"
+                className="form-control form-control-color custom-color-picker"
+                value={brushColor}
+                onChange={(e) => setBrushColor(e.target.value)}
+                disabled={disabled}
+                style={{ borderRadius: '50%' }}
+              />
+            </div>
+            <div className="row g-1" style={{ maxWidth: '100px' }}>
+              {BASIC_COLORS.map((color, index) => (
+                <div key={index} className="col-6 d-grid">
+                  <button
+                    className="btn btn-sm"
+                    style={{
+                      backgroundColor: color,
+                      height: '30px',
+                      border: `1px solid ${brushColor === color ? '#000' : '#ccc'}`,
+                    }}
+                    onClick={() => setBrushColor(color)}
+                    disabled={disabled}
+                  ></button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -314,16 +315,18 @@ const DrawingCanvas: React.ForwardRefRenderFunction<DrawingCanvasRef, DrawingCan
         </div>
       </div>
       <div className="d-flex flex-column align-items-center ms-3">
-        {timer !== null && <AnalogClock time={timer} />}
-        {timer !== null && <span className="badge bg-secondary fs-6 mb-2">{formatTime(timer)}</span>}
-        <div className="d-flex flex-column align-items-center justify-content-center p-2 border rounded h-100">
-            <div className="btn-group-vertical" role="group">
-              <button type="button" className={`btn ${tool === 'pen' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('pen')} disabled={disabled}>Pen</button>
-              <button type="button" className={`btn ${tool === 'eraser' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('eraser')} disabled={disabled}>Eraser</button>
-              <button type="button" className={`btn ${tool === 'circle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('circle')} disabled={disabled}>Circle</button>
-              <button type="button" className={`btn ${tool === 'rectangle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('rectangle')} disabled={disabled}>Rectangle</button>
-              <button type="button" className={`btn ${tool === 'bucket' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('bucket')} disabled={disabled}>Bucket</button>
-            </div>
+        <div style={{ paddingTop: '5rem' }}>
+          {timer !== null && <AnalogClock time={timer} />}
+          {timer !== null && <span className="badge bg-secondary fs-6 mb-2">{formatTime(timer)}</span>}
+          <div className="d-flex flex-column align-items-center justify-content-center p-2 border rounded h-100">
+              <div className="btn-group-vertical" role="group">
+                <button type="button" className={`btn ${tool === 'pen' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('pen')} disabled={disabled}>Pen</button>
+                <button type="button" className={`btn ${tool === 'eraser' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('eraser')} disabled={disabled}>Eraser</button>
+                <button type="button" className={`btn ${tool === 'circle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('circle')} disabled={disabled}>Circle</button>
+                <button type="button" className={`btn ${tool === 'rectangle' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('rectangle')} disabled={disabled}>Rectangle</button>
+                <button type="button" className={`btn ${tool === 'bucket' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTool('bucket')} disabled={disabled}>Bucket</button>
+              </div>
+          </div>
         </div>
       </div>
     </div>

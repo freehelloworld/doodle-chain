@@ -19,9 +19,13 @@
   height: 100vh;
 }
 
-.app-banner {
+#banner-root {
   flex-basis: 10%;
+}
+
+.app-banner {
   padding: 1rem;
+  padding-top: 5rem;
   background-color: #e9ecef;
   border-right: 1px solid #dee2e6;
 }
