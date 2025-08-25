@@ -184,7 +184,9 @@ function App() {
   return (
     <div className="App">
       {error && <div style={{ color: 'red' }}>Error: {error}</div>}
-      {renderContent()}
+      <main className="main-content">
+        {renderContent()}
+      </main>
     </div>
   );
 }

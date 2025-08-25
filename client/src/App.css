@@ -30,16 +30,25 @@ body, #root {
 }
 
 .App {
-  width: 80%;
-  height: 90vh;
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  margin: 0;
   background-color: white;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .logo {
